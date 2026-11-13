@@ -1,0 +1,106 @@
+/*
+ * QueryLens design tokens.
+ *
+ * Values are defined once as CSS custom properties per theme, then mapped into
+ * Tailwind's theme so components use semantic names (`bg-panel`, `text-ink-muted`)
+ * instead of raw hex. Changing a theme means changing this file only.
+ */
+
+@theme inline {
+  --color-canvas: var(--ql-canvas);
+  --color-panel: var(--ql-panel);
+  --color-elevated: var(--ql-elevated);
+  --color-hover: var(--ql-hover);
+  --color-line: var(--ql-line);
+  --color-line-strong: var(--ql-line-strong);
+  --color-ink: var(--ql-ink);
+  --color-ink-muted: var(--ql-ink-muted);
+  --color-ink-faint: var(--ql-ink-faint);
+  --color-accent: var(--ql-accent);
+  --color-accent-ink: var(--ql-accent-ink);
+  --color-success: var(--ql-success);
+  --color-warning: var(--ql-warning);
+  --color-danger: var(--ql-danger);
+
+  --color-op-scan: var(--ql-op-scan);
+  --color-op-filter: var(--ql-op-filter);
+  --color-op-project: var(--ql-op-project);
+  --color-op-join: var(--ql-op-join);
+  --color-op-aggregate: var(--ql-op-aggregate);
+  --color-op-sort: var(--ql-op-sort);
+  --color-op-output: var(--ql-op-output);
+  --color-op-failed: var(--ql-op-failed);
+
+  --font-sans: "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ql-canvas: #0d1117;
+  --ql-panel: #141a22;
+  --ql-elevated: #1b2430;
+  --ql-hover: #222d3a;
+  --ql-line: #2b3745;
+  --ql-line-strong: #3a4859;
+
+  --ql-ink: #e6edf3;
+  --ql-ink-muted: #9aa8b7;
+  --ql-ink-faint: #718096;
+
+  --ql-accent: #82a9ff;
+  --ql-accent-ink: #0b1220;
+  --ql-success: #39c995;
+  --ql-warning: #e8b45b;
+  --ql-danger: #f07878;
+
+  --ql-op-scan: #6ea8fe;
+  --ql-op-filter: #e8b45b;
+  --ql-op-project: #a78bfa;
+  --ql-op-join: #4fd1c5;
+  --ql-op-aggregate: #f472b6;
+  --ql-op-sort: #94a3b8;
+  --ql-op-output: #39c995;
+  --ql-op-failed: #f07878;
+}
+
+/*
+ * Light theme is designed rather than inverted: paper-toned canvas, white panels,
+ * and accents darkened until they hold contrast on light surfaces.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --ql-canvas: #f5f7fa;
+  --ql-panel: #ffffff;
+  --ql-elevated: #fbfcfd;
+  --ql-hover: #eef2f7;
+  --ql-line: #dbe1ea;
+  --ql-line-strong: #bcc6d4;
+
+  --ql-ink: #0f1620;
+  --ql-ink-muted: #4a5768;
+  --ql-ink-faint: #6a7787;
+
+  --ql-accent: #2c5fd0;
+  --ql-accent-ink: #ffffff;
+  --ql-success: #0d7a56;
+  --ql-warning: #8a5a05;
+  --ql-danger: #b02a22;
+
+  --ql-op-scan: #1f5fbf;
+  --ql-op-filter: #8a5a05;
+  --ql-op-project: #6b3fd4;
+  --ql-op-join: #0f6f68;
+  --ql-op-aggregate: #a8266b;
+  --ql-op-sort: #4c5a6b;
+  --ql-op-output: #0d7a56;
+  --ql-op-failed: #b02a22;
+}

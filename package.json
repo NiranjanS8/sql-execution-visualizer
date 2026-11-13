@@ -1,0 +1,28 @@
+{
+  "name": "querylens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first visual SQL execution engine",
+  "scripts": {
+    "install:all": "npm install && npm --prefix frontend install",
+    "dev": "concurrently --names api,web --prefix-colors blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "cd backend && go run ./cmd/querylens",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "cd backend && go build -o bin/querylens ./cmd/querylens",
+    "build:web": "npm --prefix frontend run build",
+    "test": "npm run test:api && npm run test:web",
+    "test:api": "cd backend && go test ./...",
+    "test:web": "npm --prefix frontend run test",
+    "lint": "npm run lint:api && npm run lint:web",
+    "lint:api": "cd backend && go vet ./...",
+    "lint:web": "npm --prefix frontend run lint",
+    "fmt": "npm run fmt:api && npm run fmt:web",
+    "fmt:api": "cd backend && gofmt -w .",
+    "fmt:web": "npm --prefix frontend run format",
+    "tidy": "cd backend && go mod tidy"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
+}

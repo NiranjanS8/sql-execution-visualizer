@@ -1,3 +1,31 @@
-# Local planning docs (kept out of version control)
+# Local planning and handoff docs (kept out of version control)
 QUERYLENS_IMPLEMENTATION_PLAN.md
 UI_DESIGN_PLAN.md
+PROJECT_CONTEXT.md
+
+# Dependencies
+node_modules/
+
+# Build output
+backend/bin/
+frontend/dist/
+frontend/coverage/
+
+# Local configuration
+.env
+.env.local
+.env.*.local
+
+# Go artifacts
+*.exe
+*.test
+*.out
+
+# Logs
+*.log
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
