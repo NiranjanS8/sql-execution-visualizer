@@ -10,16 +10,25 @@ import (
 	"time"
 
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/config"
+	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/dataset"
 )
 
-func newTestHandler(origins ...string) http.Handler {
+func newTestServer(origins ...string) *Server {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	cfg := config.Config{
 		Addr:           config.DefaultAddr,
 		AllowedOrigins: origins,
 		ShutdownGrace:  config.DefaultShutdownGrace,
 	}
-	return NewServer(cfg, logger).Handler()
+	datasets := dataset.NewStore()
+	if err := dataset.SeedSamples(datasets); err != nil {
+		panic("seed samples: " + err.Error())
+	}
+	return NewServer(cfg, logger, datasets)
+}
+
+func newTestHandler(origins ...string) http.Handler {
+	return newTestServer(origins...).Handler()
 }
 
 func doRequest(t *testing.T, handler http.Handler, method, path string, headers map[string]string) *httptest.ResponseRecorder {

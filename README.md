@@ -4,7 +4,7 @@ A local-first, visual SQL execution engine for learning, debugging, and understa
 
 Load a dataset, write a query, run it, and see two things at once: the rows that came back, and a graph of the operators that produced them — each with its real row counts, duration, and configuration.
 
-> **Status: Phase 1 — domain model and in-memory catalog.** The backend now has typed values, schemas, tables, and a concurrency-safe catalog with built-in sample datasets. The API still exposes only a health endpoint; no dataset or query routes exist yet. See [docs/roadmap.md](docs/roadmap.md).
+> **Status: Phase 2 — CSV import and dataset explorer.** The backend imports CSV files into in-memory datasets with conservative type inference, and serves dataset, table, and paginated row endpoints. The frontend is a dataset explorer with schema inspection and a bounded row preview. SQL parsing and execution are not implemented yet. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Why
 
@@ -14,7 +14,7 @@ Most SQL tools show you an answer. QueryLens shows you the process: which operat
 
 | Tool | Version | Notes |
 | --- | --- | --- |
-| Go | 1.24+ | Backend |
+| Go | 1.27+ | Backend (`backend/go.mod`) |
 | Node.js | 20+ | Frontend tooling |
 | npm | 10+ | Ships with Node |
 
@@ -27,7 +27,7 @@ npm run install:all   # install root + frontend dependencies
 npm run dev           # start API on :8787 and web on :5173
 ```
 
-Open http://localhost:5173. The status strip reports whether the API is reachable.
+Open http://localhost:5173. The status strip reports whether the API is reachable. The `samples` dataset is available immediately; use **Import CSV** in the explorer to load `samples/employees.csv` or your own file.
 
 To run the two processes separately:
 
@@ -71,7 +71,7 @@ The frontend reads build-time Vite variables.
 .
 ├── backend/            Go API server
 │   ├── cmd/querylens/  process entry point
-│   └── internal/       api, config, catalog (planner, execution later)
+│   └── internal/       api, config, catalog, dataset (planner, execution later)
 ├── frontend/           React + TypeScript + Vite application
 │   └── src/
 │       ├── app/        shell, providers, routes

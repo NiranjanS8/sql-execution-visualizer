@@ -4,7 +4,7 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 
 ## Current position
 
-**Phase 0 — complete. UI Phase A — complete. Phase 1 — complete.** Next: Phase 2 (CSV import and dataset browser API).
+**Phase 0 — complete. UI Phase A — complete. Phase 1 and Phase 2 — complete.** Next: Phase 3 (SQL parser adapter and supported-syntax validation).
 
 ## Engineering phases
 
@@ -12,8 +12,8 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 | --- | --- | --- |
 | 0 | Repository foundation, health endpoint, frontend shell | ✅ Complete |
 | 1 | Typed values, rows, schemas, in-memory catalog, sample datasets | ✅ Complete |
-| 2 | CSV import, dataset browser API and UI | Next |
-| 3 | SQL parser adapter and supported-syntax validation | — |
+| 2 | CSV import, dataset browser API and UI | ✅ Complete |
+| 3 | SQL parser adapter and supported-syntax validation | Next |
 | 4 | Expression evaluation with three-valued NULL logic | — |
 | 5 | Execution operators: scan, filter, project, limit, sort | — |
 | 6 | Logical planner and end-to-end single-table queries | — |
@@ -31,7 +31,7 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 | --- | --- | --- |
 | A | Design discovery: direction, tokens, wireframes, component inventory | ✅ Complete |
 | B | Application shell and design system | Partial — shell and tokens exist, panels do not |
-| C | Dataset explorer | — |
+| C | Dataset explorer | ✅ Complete |
 | D | SQL editor | — |
 | E | Results grid | — |
 | F | Execution graph and operator inspector | — |

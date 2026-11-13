@@ -26,11 +26,3 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	writeError(w, s.log, http.StatusNotFound, "not_found", "No route matches "+r.URL.Path+".")
 }
-
-func (s *Server) methodNotAllowed(allowed string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Allow", allowed)
-		writeError(w, s.log, http.StatusMethodNotAllowed, "method_not_allowed",
-			r.Method+" is not supported for "+r.URL.Path+". Use "+allowed+".")
-	}
-}

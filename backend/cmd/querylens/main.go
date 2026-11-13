@@ -13,6 +13,7 @@ import (
 
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/api"
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/config"
+	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/dataset"
 )
 
 func main() {
@@ -26,9 +27,14 @@ func run() error {
 	cfg := config.Load()
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
+	datasets := dataset.NewStore()
+	if err := dataset.SeedSamples(datasets); err != nil {
+		return fmt.Errorf("seed sample datasets: %w", err)
+	}
+
 	server := &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           api.NewServer(cfg, logger).Handler(),
+		Handler:           api.NewServer(cfg, logger, datasets).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,

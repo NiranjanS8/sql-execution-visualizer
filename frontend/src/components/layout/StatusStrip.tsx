@@ -26,7 +26,7 @@ export function StatusStrip() {
           <span>v{data.version}</span>
         </>
       ) : null}
-      <span className="ml-auto hidden sm:inline">phase 0 · foundation</span>
+      <span className="ml-auto hidden sm:inline">phase 2 · datasets</span>
     </footer>
   );
 }

@@ -1,10 +1,10 @@
 import { AppShell } from "../components/layout/AppShell";
-import { FoundationOverview } from "../features/workspace/FoundationOverview";
+import { Workspace } from "../features/workspace/Workspace";
 
 export function App() {
   return (
     <AppShell>
-      <FoundationOverview />
+      <Workspace />
     </AppShell>
   );
 }

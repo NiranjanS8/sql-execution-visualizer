@@ -34,8 +34,8 @@ Data flows one way. Each layer depends on the one below it; none of them depend 
 | --- | --- | --- |
 | `internal/config` | Environment-driven process configuration | 0 |
 | `internal/api` | Routing, middleware, request/response DTOs, error mapping | 0 |
-| `internal/catalog` | Datasets, tables, schemas, typed rows | 1 |
-| `internal/dataset` | CSV parsing and type inference | 2 |
+| `internal/catalog` | Tables, schemas, typed rows, registry | 1 |
+| `internal/dataset` | Dataset grouping, CSV parsing, type inference, import limits | 2 |
 | `internal/sqlparse` | Parser-library adapter; converts to QueryLens AST | 3 |
 | `internal/validate` | Name resolution, type checking, supported-syntax checks | 3–4 |
 | `internal/planner` | Logical operator tree construction | 6 |
@@ -68,7 +68,9 @@ The initial execution model is pull-based iterators, because operator compositio
 
 ## Current implementation status
 
-Phase 0 only. The API exposes `GET /api/v1/health`. There is no catalog, parser, planner, or executor. The frontend is a shell that reports API reachability.
+Phases 0–2 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, parser, planner, or executor yet.
+
+CSV import is deliberately conservative: it infers only `integer`, `decimal`, `boolean`, and `text`, treats empty fields and configured tokens as NULL, keeps identifier-like numerics (leading zeros) and int64 overflows as text, and reports adjusted headers before commit. The full contract is in [api.md](api.md) and [ADR 0003](decisions/0003-csv-import.md).
 
 ## Assumptions
 

@@ -7,7 +7,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="grid h-full grid-rows-[auto_minmax(0,1fr)_auto] bg-canvas text-ink">
       <TopBar />
-      <main className="min-h-0 overflow-y-auto">{children}</main>
+      <main className="min-h-0 overflow-hidden">{children}</main>
       <StatusStrip />
     </div>
   );
