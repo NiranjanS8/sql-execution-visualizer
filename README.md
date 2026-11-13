@@ -4,7 +4,7 @@ A local-first, visual SQL execution engine for learning, debugging, and understa
 
 Load a dataset, write a query, run it, and see two things at once: the rows that came back, and a graph of the operators that produced them — each with its real row counts, duration, and configuration.
 
-> **Status: Phase 0 — engineering foundation.** The API serves a health endpoint and the frontend shell renders against it. No catalog, parser, planner, or execution engine exists yet. See [docs/roadmap.md](docs/roadmap.md).
+> **Status: Phase 1 — domain model and in-memory catalog.** The backend now has typed values, schemas, tables, and a concurrency-safe catalog with built-in sample datasets. The API still exposes only a health endpoint; no dataset or query routes exist yet. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Why
 
@@ -71,7 +71,7 @@ The frontend reads build-time Vite variables.
 .
 ├── backend/            Go API server
 │   ├── cmd/querylens/  process entry point
-│   └── internal/       api, config (catalog, planner, execution later)
+│   └── internal/       api, config, catalog (planner, execution later)
 ├── frontend/           React + TypeScript + Vite application
 │   └── src/
 │       ├── app/        shell, providers, routes

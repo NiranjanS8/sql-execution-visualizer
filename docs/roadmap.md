@@ -4,15 +4,15 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 
 ## Current position
 
-**Phase 0 — complete. UI Phase A — complete.** Next: Phase 1 (domain model and in-memory catalog).
+**Phase 0 — complete. UI Phase A — complete. Phase 1 — complete.** Next: Phase 2 (CSV import and dataset browser API).
 
 ## Engineering phases
 
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 0 | Repository foundation, health endpoint, frontend shell | ✅ Complete |
-| 1 | Typed values, rows, schemas, in-memory catalog, sample datasets | Next |
-| 2 | CSV import, dataset browser API and UI | — |
+| 1 | Typed values, rows, schemas, in-memory catalog, sample datasets | ✅ Complete |
+| 2 | CSV import, dataset browser API and UI | Next |
 | 3 | SQL parser adapter and supported-syntax validation | — |
 | 4 | Expression evaluation with three-valued NULL logic | — |
 | 5 | Execution operators: scan, filter, project, limit, sort | — |

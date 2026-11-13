@@ -49,16 +49,25 @@ These are rejected with `unsupported_syntax`, not approximated:
 - Vendor-specific extensions (`::` casts, `LIMIT n, m`, `ILIKE`, backtick identifiers)
 - Implicit type coercion beyond the documented rules
 
-## Semantics to be fixed before implementation
+## Semantics
 
-Each of these is decided and written down before the feature ships, then tested:
+Decided in [ADR 0002](decisions/0002-value-and-schema-model.md) and covered by tests:
 
-- Supported logical types and their Go representations
-- `NULL` propagation through arithmetic, comparison, and boolean operators
-- Numeric overflow policy (error versus saturation)
-- Integer versus decimal division
-- String comparison rules (byte order, case sensitivity)
-- Whether and when an empty result is distinguishable from a zero-row result
+- Four logical types: `boolean`, `integer`, `decimal`, `text`. `NULL` is a value, never a column type.
+- `NULL` is distinct from `''`, `0`, and `false`, and never coerces to them.
+- Values are copied, never aliased. No implicit coercion between types.
+- `decimal` is currently IEEE-754 binary64 — **not** exact decimal arithmetic.
+
+Still to be decided before the feature ships:
+
+| Question | Decided in |
+| --- | --- |
+| `NULL` propagation through arithmetic, comparison, and boolean operators | Phase 4 |
+| Numeric overflow policy (error versus saturation) | Phase 4 |
+| Integer versus decimal division, and division by zero | Phase 4 |
+| String comparison rules (byte order, case sensitivity) | Phase 4 |
+| Whether `decimal` becomes exact arithmetic | Phase 4 |
+| Whether an empty result is distinguishable from a zero-row result | Phase 5 |
 
 ## Reading errors
 
