@@ -62,6 +62,31 @@ func (c *Catalog) Get(id TableID) (*Table, bool) {
 	return table, ok
 }
 
+// Lookup returns the table with the given name, matched case-insensitively the
+// way SQL identifiers are.
+func (c *Catalog) Lookup(name string) (*Table, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	id, ok := c.names[normalizeName(name)]
+	if !ok {
+		return nil, false
+	}
+	return c.tables[id], true
+}
+
+// Names returns the registered table names in registration order.
+func (c *Catalog) Names() []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	names := make([]string, 0, len(c.order))
+	for _, id := range c.order {
+		names = append(names, c.tables[id].Name)
+	}
+	return names
+}
+
 // List returns the registered tables in registration order.
 func (c *Catalog) List() []*Table {
 	c.mu.RLock()

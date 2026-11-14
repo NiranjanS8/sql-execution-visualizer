@@ -36,8 +36,8 @@ Data flows one way. Each layer depends on the one below it; none of them depend 
 | `internal/api` | Routing, middleware, request/response DTOs, error mapping | 0 |
 | `internal/catalog` | Tables, schemas, typed rows, registry | 1 |
 | `internal/dataset` | Dataset grouping, CSV parsing, type inference, import limits | 2 |
-| `internal/sqlparse` | Parser-library adapter; converts to QueryLens AST | 3 |
-| `internal/validate` | Name resolution, type checking, supported-syntax checks | 3–4 |
+| `internal/sqlparse` | Lexer, recursive-descent parser, QueryLens AST, syntax errors | Implemented (Phase 3) |
+| `internal/validate` | Name resolution, wildcard expansion, output naming, ambiguity checks | Implemented (Phase 3) |
 | `internal/planner` | Logical operator tree construction | 6 |
 | `internal/execution` | Operator implementations and execution context | 5 |
 | `internal/metrics` | Per-operator instrumentation and bounded samples | 7 |
@@ -68,9 +68,11 @@ The initial execution model is pull-based iterators, because operator compositio
 
 ## Current implementation status
 
-Phases 0–2 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, parser, planner, or executor yet.
+Phases 0–3 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, planner, or executor yet.
 
 CSV import is deliberately conservative: it infers only `integer`, `decimal`, `boolean`, and `text`, treats empty fields and configured tokens as NULL, keeps identifier-like numerics (leading zeros) and int64 overflows as text, and reports adjusted headers before commit. The full contract is in [api.md](api.md) and [ADR 0003](decisions/0003-csv-import.md).
+
+SQL text is now parsed and validated. `internal/sqlparse` is a hand-written lexer and recursive-descent parser for the subset in [sql-support.md](sql-support.md); `internal/validate` binds tables and columns, expands wildcards, and detects unknown or ambiguous names. Nothing executes a query yet, and no query endpoint exists. See [ADR 0004](decisions/0004-sql-parser.md).
 
 ## Assumptions
 

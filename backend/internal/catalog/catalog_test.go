@@ -42,6 +42,42 @@ func TestCatalogGetUnknownTable(t *testing.T) {
 	}
 }
 
+func TestCatalogLookupMatchesNameCaseInsensitively(t *testing.T) {
+	store := New()
+	table := simpleTable(t, "people", "People")
+	if err := store.Create(table); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	for _, name := range []string{"People", "people", "PEOPLE"} {
+		found, ok := store.Lookup(name)
+		if !ok {
+			t.Fatalf("Lookup(%q) did not find the table", name)
+		}
+		if found != table {
+			t.Errorf("Lookup(%q) returned a different table instance", name)
+		}
+	}
+
+	if _, ok := store.Lookup("missing"); ok {
+		t.Error("Lookup found a table that was never registered")
+	}
+}
+
+func TestCatalogNamesPreservesRegistrationOrder(t *testing.T) {
+	store := New()
+	for _, name := range []string{"zebra", "alpha"} {
+		if err := store.Create(simpleTable(t, TableID(name), name)); err != nil {
+			t.Fatalf("Create(%s): %v", name, err)
+		}
+	}
+
+	names := store.Names()
+	if len(names) != 2 || names[0] != "zebra" || names[1] != "alpha" {
+		t.Errorf("Names() = %v, want [zebra alpha]", names)
+	}
+}
+
 func TestCatalogListPreservesRegistrationOrder(t *testing.T) {
 	store := New()
 	ids := []TableID{"zebra", "alpha", "middle"}
