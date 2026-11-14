@@ -496,6 +496,71 @@ func TestEvalIsNull(t *testing.T) {
 	}
 }
 
+func TestCompareOrdersCompatibleValues(t *testing.T) {
+	tests := []struct {
+		name  string
+		left  catalog.Value
+		right catalog.Value
+		want  int
+	}{
+		{"integer less", catalog.Int(1), catalog.Int(2), -1},
+		{"integer equal", catalog.Int(2), catalog.Int(2), 0},
+		{"integer greater", catalog.Int(3), catalog.Int(2), 1},
+		{"decimal less", catalog.Decimal(1.5), catalog.Decimal(2.5), -1},
+		{"mixed numeric widening", catalog.Int(1), catalog.Decimal(1.5), -1},
+		{"mixed numeric equal", catalog.Int(2), catalog.Decimal(2), 0},
+		{"text byte order", catalog.Text("B"), catalog.Text("a"), -1},
+		{"text equal", catalog.Text("a"), catalog.Text("a"), 0},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Compare(test.left, test.right)
+			if err != nil {
+				t.Fatalf("Compare: %v", err)
+			}
+			if got != test.want {
+				t.Errorf("Compare = %d, want %d", got, test.want)
+			}
+		})
+	}
+}
+
+func TestCompareRejectsUnorderableValues(t *testing.T) {
+	tests := []struct {
+		name  string
+		left  catalog.Value
+		right catalog.Value
+		code  ErrorCode
+		want  string
+	}{
+		{"null", catalog.Null(), catalog.Int(1), CodeExecutionError, "non-NULL"},
+		{"null on the right", catalog.Int(1), catalog.Null(), CodeExecutionError, "non-NULL"},
+		{"boolean", catalog.Bool(true), catalog.Bool(false), CodeTypeError, "no ordering"},
+		{"mismatched types", catalog.Text("x"), catalog.Int(1), CodeTypeError, "Cannot compare text with integer"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := Compare(test.left, test.right)
+			if err == nil {
+				t.Fatal("Compare succeeded, want an error")
+			}
+
+			var evalErr *Error
+			if !errors.As(err, &evalErr) {
+				t.Fatalf("error = %T, want *Error", err)
+			}
+			if evalErr.Code != test.code {
+				t.Errorf("code = %q, want %q", evalErr.Code, test.code)
+			}
+			if !strings.Contains(evalErr.Message, test.want) {
+				t.Errorf("message = %q, want it to contain %q", evalErr.Message, test.want)
+			}
+		})
+	}
+}
+
 func TestEvalReportsSourcePositions(t *testing.T) {
 	pos := sqlparse.Position{Line: 3, Column: 7}
 	expr := &sqlparse.Binary{

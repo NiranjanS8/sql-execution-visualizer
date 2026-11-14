@@ -183,8 +183,17 @@ func resolveOrderBy(items []sqlparse.OrderItem, sources []Source, output []Outpu
 			return nil, err
 		}
 
-		if _, err := eval.Infer(item.Expr); err != nil {
+		typ, err := eval.Infer(item.Expr)
+		if err != nil {
 			return nil, err
+		}
+		if typ == catalog.TypeBoolean {
+			return nil, &eval.Error{
+				Code:    eval.CodeTypeError,
+				Message: "ORDER BY cannot sort boolean expressions; booleans have no ordering.",
+				Line:    item.Expr.Position().Line,
+				Column:  item.Expr.Position().Column,
+			}
 		}
 	}
 

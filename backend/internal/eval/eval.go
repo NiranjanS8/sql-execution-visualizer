@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/catalog"
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/sqlparse"
@@ -342,6 +343,40 @@ func compare(node *sqlparse.Binary, left, right catalog.Value) (catalog.Value, e
 
 	return catalog.Null(), errorAt(CodeTypeError, node.Pos,
 		"Cannot compare %s with %s.", left.Type(), right.Type())
+}
+
+// Compare orders two non-NULL values of compatible types. It returns -1 when
+// left sorts before right, 0 when they are equal, and 1 otherwise. NULL handling
+// belongs to the caller, because where NULLs sort is a query-level decision.
+func Compare(left, right catalog.Value) (int, error) {
+	if left.IsNull() || right.IsNull() {
+		return 0, &Error{Code: CodeExecutionError, Message: "Compare requires non-NULL values."}
+	}
+
+	leftInt, leftIsInt := left.AsInt()
+	rightInt, rightIsInt := right.AsInt()
+	_, leftIsDecimal := left.AsDecimal()
+	_, rightIsDecimal := right.AsDecimal()
+
+	if (leftIsInt || leftIsDecimal) && (rightIsInt || rightIsDecimal) {
+		if leftIsInt && rightIsInt {
+			return cmp.Compare(leftInt, rightInt), nil
+		}
+		return cmp.Compare(numericAsFloat(left), numericAsFloat(right)), nil
+	}
+
+	leftText, leftIsText := left.AsText()
+	rightText, rightIsText := right.AsText()
+	if leftIsText && rightIsText {
+		return strings.Compare(leftText, rightText), nil
+	}
+
+	if left.Type() == catalog.TypeBoolean && right.Type() == catalog.TypeBoolean {
+		return 0, &Error{Code: CodeTypeError, Message: "Booleans have no ordering; use = or !=."}
+	}
+
+	return 0, &Error{Code: CodeTypeError,
+		Message: fmt.Sprintf("Cannot compare %s with %s.", left.Type(), right.Type())}
 }
 
 // ordered applies a comparison to two values of the same ordered type.

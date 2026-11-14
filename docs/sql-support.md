@@ -6,7 +6,7 @@ This table is the contract. It is updated in the same change that implements a f
 
 ## Status
 
-Phase 4 implements parsing, name resolution, static type checking, and expression evaluation. A supported statement is turned into a validated structure whose output columns carry inferred types, and every expression can be evaluated against a row. **No query is executed yet** — operators and the planner arrive in Phases 5–6. Unsupported syntax is rejected at parse time, before any name is resolved.
+Phase 5 implements parsing, name resolution, static type checking, expression evaluation, and the pull-based operators that run a single-table query: scan, filter, sort, project, and limit. A supported statement is turned into a validated structure whose output columns carry inferred types, and the operators can execute it. **No HTTP query endpoint exists yet** — the planner and query API arrive in Phases 6 and 8. Unsupported syntax is rejected at parse time, before any name is resolved.
 
 ## Supported now
 
@@ -20,9 +20,9 @@ Phase 4 implements parsing, name resolution, static type checking, and expressio
 | Comparison | `=`, `!=`, `<>`, `<`, `<=`, `>`, `>=` | `NULL` compares to nothing; use `IS NULL` |
 | Boolean | `AND`, `OR`, `NOT` | `NOT` binds tighter than `AND`, which binds tighter than `OR` |
 | Arithmetic | `+`, `-`, `*`, `/`, unary `-` | `*` and `/` bind tighter than `+` and `-` |
-| Filtering | `WHERE <predicate>` | Rows where the predicate is not `TRUE` will be dropped |
-| Ordering | `ORDER BY expr [ASC\|DESC], ...` | Default is ascending |
-| Limiting | `LIMIT n` | `n` is a non-negative integer |
+| Filtering | `WHERE <predicate>` | Only rows where the predicate is `TRUE` are kept |
+| Ordering | `ORDER BY expr [ASC\|DESC], ...` | Stable; NULLs sort last in both directions; booleans are rejected |
+| Limiting | `LIMIT n` | `n` is a non-negative integer; `LIMIT 0` returns no rows |
 | Null tests | `IS NULL`, `IS NOT NULL` | The only correct way to test for null |
 | Comments | `-- line`, `/* block */` | Ignored by the lexer |
 | Identifiers | `name`, `"name"` | Double quotes allow reserved words and spaces; matching is case-insensitive |
@@ -64,7 +64,7 @@ These are rejected with `unsupported_syntax`, not approximated:
 
 ## Semantics
 
-Decided in [ADR 0002](decisions/0002-value-and-schema-model.md) and [ADR 0005](decisions/0005-expression-semantics.md), and covered by tests.
+Decided in [ADR 0002](decisions/0002-value-and-schema-model.md), [ADR 0005](decisions/0005-expression-semantics.md), and [ADR 0006](decisions/0006-execution-operators.md), and covered by tests.
 
 ### Types and coercion
 
@@ -97,11 +97,20 @@ Decided in [ADR 0002](decisions/0002-value-and-schema-model.md) and [ADR 0005](d
 - Text comparison is byte-wise and case-sensitive: `'B' < 'a'` is true.
 - `WHERE` must be boolean. A `NULL` predicate is allowed and matches no rows. Output columns carry their inferred type.
 
+### Ordering and limiting
+
+- `ORDER BY` evaluates each term against the source row, so it can only reference source columns, not output aliases or positions.
+- Sorting is stable: rows that compare equal keep their input order.
+- `NULL` sorts after every non-NULL value in both `ASC` and `DESC`. `DESC` reverses the order of known values only, never the placement of NULLs.
+- Boolean expressions are rejected in `ORDER BY` with `type_error`; booleans have no ordering.
+- Sorting materializes its input. The cost is bounded by the scanned table size, not by the query.
+- `LIMIT 0` returns no rows and never reads its input. A limit larger than the input returns every row. `LIMIT` is applied after projection.
+
 Open questions:
 
 | Question | Status |
 | --- | --- |
-| Whether an empty result is distinguishable from a zero-row result | Phase 5 |
+| Whether an empty result is distinguishable from a zero-row result | Resolved in Phase 5 — a result is its schema plus zero or more rows; there is no separate empty state |
 | Whether `decimal` becomes exact arithmetic | Deferred; binary64 is accepted debt (ADR 0005) |
 
 ## Reading errors
@@ -125,7 +134,8 @@ Errors carry a stable `code` and a 1-based line and column where the parser, val
 | `unknown_table` | `internal/validate` | The `FROM` table, or a qualifier, does not resolve. |
 | `unknown_column` | `internal/validate` | A column reference does not resolve. |
 | `ambiguous_column` | `internal/validate` | A column reference matches more than one source. |
-| `type_error` | `internal/eval`, `internal/validate` | An operator cannot accept its operand types, or `WHERE` is not boolean. |
+| `type_error` | `internal/eval`, `internal/validate`, `internal/execution` | An operator cannot accept its operand types, `WHERE` is not boolean, or `ORDER BY` is boolean. |
 | `execution_error` | `internal/eval` | Evaluation failed: division by zero, numeric overflow, or an unbound column. |
+| `timeout` | Phase 8 | The request exceeded its deadline. Operators return `context.Canceled`/`context.DeadlineExceeded` unchanged so the API can classify it. |
 
 A single-table query cannot produce `ambiguous_column`: table schemas reject duplicate column names. The resolver already handles multiple sources, so the check is in place for Phase 10.

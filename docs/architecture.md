@@ -40,7 +40,7 @@ Data flows one way. Each layer depends on the one below it; none of them depend 
 | `internal/validate` | Name resolution, wildcard expansion, output naming/types, type checks | Implemented (Phases 3–4) |
 | `internal/eval` | Expression type inference, evaluation, three-valued NULL logic | Implemented (Phase 4) |
 | `internal/planner` | Logical operator tree construction | 6 |
-| `internal/execution` | Operator implementations and execution context | 5 |
+| `internal/execution` | Pull-based operators (scan, filter, sort, project, limit) and cancellation | Implemented (Phase 5) |
 | `internal/metrics` | Per-operator instrumentation and bounded samples | 7 |
 | `internal/query` | Orchestrates the pipeline and assembles the response | 8 |
 
@@ -67,15 +67,15 @@ Values are typed, not stringly. `NULL` is a distinct value, never an empty strin
 
 Expressions are type-checked before they run, and `NULL` follows SQL three-valued logic rather than ordinary boolean behaviour. The rules are in [ADR 0005](decisions/0005-expression-semantics.md).
 
-The initial execution model is pull-based iterators, because operator composition and instrumentation are simpler to reason about than a push model. Cancellation is passed through the execution context and checked inside long-running operators.
+The execution model is pull-based iterators, because operator composition and instrumentation are simpler to reason about than a push model. Cancellation is passed through the execution context and checked inside long-running operators. Scan, filter, project, and limit stream; sort materializes its input so it can order it stably. See [ADR 0006](decisions/0006-execution-operators.md).
 
 ## Current implementation status
 
-Phases 0–4 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, planner, or executor yet.
+Phases 0–5 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, planner, query endpoint, or execution graph yet.
 
 CSV import is deliberately conservative: it infers only `integer`, `decimal`, `boolean`, and `text`, treats empty fields and configured tokens as NULL, keeps identifier-like numerics (leading zeros) and int64 overflows as text, and reports adjusted headers before commit. The full contract is in [api.md](api.md) and [ADR 0003](decisions/0003-csv-import.md).
 
-SQL text is parsed, validated, and type-checked. `internal/sqlparse` is a hand-written lexer and recursive-descent parser for the subset in [sql-support.md](sql-support.md); `internal/validate` binds tables and columns, expands wildcards, detects unknown or ambiguous names, and rejects incompatible operand types; `internal/eval` infers output types and evaluates expressions with SQL three-valued NULL logic. Nothing executes a query yet, and no query endpoint exists. See [ADR 0004](decisions/0004-sql-parser.md) and [ADR 0005](decisions/0005-expression-semantics.md).
+SQL text is parsed, validated, type-checked, and executable through the operator package. `internal/sqlparse` is a hand-written lexer and recursive-descent parser for the subset in [sql-support.md](sql-support.md); `internal/validate` binds tables and columns, expands wildcards, detects unknown or ambiguous names, and rejects incompatible operand types; `internal/eval` infers output types and evaluates expressions with SQL three-valued NULL logic; `internal/execution` runs a single-table query through scan, filter, sort, project, and limit operators. There is no planner or query endpoint yet, so execution is only reachable from tests. See [ADR 0004](decisions/0004-sql-parser.md), [ADR 0005](decisions/0005-expression-semantics.md), and [ADR 0006](decisions/0006-execution-operators.md).
 
 ## Assumptions
 

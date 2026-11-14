@@ -438,6 +438,7 @@ func TestResolveRejectsTypeErrors(t *testing.T) {
 		{"order by text arithmetic", "SELECT name FROM employees ORDER BY name + 1", "requires numeric operands"},
 		{"compare text with integer", "SELECT name = 1 FROM employees", "Cannot compare text with integer"},
 		{"boolean ordering", "SELECT active < TRUE FROM employees", "no boolean ordering"},
+		{"order by boolean", "SELECT name FROM employees ORDER BY active", "booleans have no ordering"},
 	}
 
 	for _, test := range tests {

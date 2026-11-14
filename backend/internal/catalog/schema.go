@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // ColumnID identifies a column within a schema. It stays stable when a schema is
@@ -44,8 +45,20 @@ type Schema struct {
 var identifierPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // NewSchema assigns identifiers c1..cN in declaration order and validates the
-// result.
+// result as a table schema.
 func NewSchema(defs ...ColumnDef) (Schema, error) {
+	return buildSchema(defs, validateTableColumn)
+}
+
+// NewResultSchema assigns identifiers c1..cN in declaration order for an
+// operator's output. A result column is not a table column: its display name may
+// contain any non-empty text, and an expression whose type is unknown (the NULL
+// literal) has TypeNull.
+func NewResultSchema(defs ...ColumnDef) (Schema, error) {
+	return buildSchema(defs, validateResultColumn)
+}
+
+func buildSchema(defs []ColumnDef, validate func(Column, int) error) (Schema, error) {
 	if len(defs) == 0 {
 		return Schema{}, invalid("columns", "schema must declare at least one column")
 	}
@@ -65,7 +78,7 @@ func NewSchema(defs ...ColumnDef) (Schema, error) {
 		if column.Nullability == "" {
 			column.Nullability = NullabilityUnknown
 		}
-		if err := validateColumn(column, position); err != nil {
+		if err := validate(column, position); err != nil {
 			return Schema{}, err
 		}
 		schema.columns[position] = column
@@ -75,7 +88,7 @@ func NewSchema(defs ...ColumnDef) (Schema, error) {
 	return schema, nil
 }
 
-func validateColumn(column Column, position int) error {
+func validateTableColumn(column Column, position int) error {
 	field := fmt.Sprintf("columns[%d]", position)
 
 	if !identifierPattern.MatchString(column.Name) {
@@ -86,13 +99,28 @@ func validateColumn(column Column, position int) error {
 	if !column.Type.IsColumnType() {
 		return invalid(field+".type", "%q is not a column type", column.Type)
 	}
+	return validateNullability(column, field)
+}
+
+func validateResultColumn(column Column, position int) error {
+	field := fmt.Sprintf("columns[%d]", position)
+
+	if strings.TrimSpace(column.Name) == "" {
+		return invalid(field+".name", "column name must not be empty")
+	}
+	if column.Type != TypeNull && !column.Type.IsColumnType() {
+		return invalid(field+".type", "%q is not a column type", column.Type)
+	}
+	return validateNullability(column, field)
+}
+
+func validateNullability(column Column, field string) error {
 	switch column.Nullability {
 	case NullabilityUnknown, NullabilityNullable, NullabilityNotNull:
+		return nil
 	default:
 		return invalid(field+".nullability", "%q is not a known nullability", column.Nullability)
 	}
-
-	return nil
 }
 
 // Len returns the number of columns.

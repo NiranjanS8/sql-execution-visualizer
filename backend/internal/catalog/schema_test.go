@@ -114,6 +114,58 @@ func TestNewSchemaRejectsInvalidDefinitions(t *testing.T) {
 	}
 }
 
+func TestNewResultSchemaAllowsDisplayNamesAndNullType(t *testing.T) {
+	schema, err := NewResultSchema(
+		ColumnDef{Name: "total salary", Type: TypeInteger},
+		ColumnDef{Name: "expr_2", Type: TypeNull},
+	)
+	if err != nil {
+		t.Fatalf("NewResultSchema: %v", err)
+	}
+
+	if got := schema.ColumnAt(0).Name; got != "total salary" {
+		t.Errorf("display name = %q, want %q", got, "total salary")
+	}
+	if got := schema.ColumnAt(1).Type; got != TypeNull {
+		t.Errorf("type = %s, want null", got)
+	}
+	for position, want := range []ColumnID{"c1", "c2"} {
+		if got := schema.ColumnAt(position).ID; got != want {
+			t.Errorf("ColumnAt(%d).ID = %q, want %q", position, got, want)
+		}
+	}
+}
+
+func TestNewResultSchemaRejectsInvalidDefinitions(t *testing.T) {
+	tests := []struct {
+		name string
+		defs []ColumnDef
+	}{
+		{"no columns", nil},
+		{"empty name", []ColumnDef{{Name: "", Type: TypeInteger}}},
+		{"whitespace name", []ColumnDef{{Name: "   ", Type: TypeInteger}}},
+		{"unknown type", []ColumnDef{{Name: "x", Type: "geometry"}}},
+		{"unknown nullability", []ColumnDef{{Name: "x", Type: TypeInteger, Nullability: "sometimes"}}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := NewResultSchema(test.defs...)
+			if err == nil {
+				t.Fatal("expected a validation error")
+			}
+
+			var validation *ValidationError
+			if !errors.As(err, &validation) {
+				t.Fatalf("error type = %T, want *ValidationError", err)
+			}
+			if validation.Field == "" {
+				t.Error("ValidationError.Field is empty")
+			}
+		})
+	}
+}
+
 func TestSchemaAllowsDuplicateColumnNames(t *testing.T) {
 	schema, err := NewSchema(
 		ColumnDef{Name: "id", Type: TypeInteger},
