@@ -4,7 +4,7 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 
 ## Current position
 
-**Phase 0 — complete. UI Phase A — complete. Phases 1–3 — complete.** Next: Phase 4 (expression evaluation with three-valued NULL logic).
+**Phase 0 — complete. UI Phase A — complete. Phases 1–4 — complete.** Next: Phase 5 (execution operators: scan, filter, project, limit, sort).
 
 ## Engineering phases
 
@@ -14,8 +14,8 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 | 1 | Typed values, rows, schemas, in-memory catalog, sample datasets | ✅ Complete |
 | 2 | CSV import, dataset browser API and UI | ✅ Complete |
 | 3 | SQL parser adapter and supported-syntax validation | ✅ Complete |
-| 4 | Expression evaluation with three-valued NULL logic | Next |
-| 5 | Execution operators: scan, filter, project, limit, sort | — |
+| 4 | Expression evaluation with three-valued NULL logic | ✅ Complete |
+| 5 | Execution operators: scan, filter, project, limit, sort | Next |
 | 6 | Logical planner and end-to-end single-table queries | — |
 | 7 | Execution recorder and plan metadata | — |
 | 8 | Query API and result presentation | — |

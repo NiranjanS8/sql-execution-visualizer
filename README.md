@@ -4,7 +4,7 @@ A local-first, visual SQL execution engine for learning, debugging, and understa
 
 Load a dataset, write a query, run it, and see two things at once: the rows that came back, and a graph of the operators that produced them — each with its real row counts, duration, and configuration.
 
-> **Status: Phase 3 — SQL parser and validation.** The backend imports CSV files into in-memory datasets and now parses the supported SQL subset into validated internal structures, rejecting unsupported syntax and unknown or ambiguous names before execution. The frontend is a dataset explorer with schema inspection and a bounded row preview. Query execution and the execution graph are not implemented yet. See [docs/roadmap.md](docs/roadmap.md) and [docs/sql-support.md](docs/sql-support.md).
+> **Status: Phase 4 — expression evaluation.** The backend imports CSV files into in-memory datasets, parses the supported SQL subset, resolves names and types, and evaluates expressions with SQL three-valued NULL logic. Unsupported syntax and invalid operand types fail loudly before execution. The frontend is a dataset explorer with schema inspection and a bounded row preview. Query execution and the execution graph are not implemented yet. See [docs/roadmap.md](docs/roadmap.md) and [docs/sql-support.md](docs/sql-support.md).
 
 ## Why
 
@@ -71,7 +71,7 @@ The frontend reads build-time Vite variables.
 .
 ├── backend/            Go API server
 │   ├── cmd/querylens/  process entry point
-│   └── internal/       api, config, catalog, dataset, sqlparse, validate
+│   └── internal/       api, config, catalog, dataset, sqlparse, validate, eval
 ├── frontend/           React + TypeScript + Vite application
 │   └── src/
 │       ├── app/        shell, providers, routes

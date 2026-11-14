@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/catalog"
+	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/eval"
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/sqlparse"
 )
 
@@ -89,6 +90,9 @@ func TestResolveSimpleProjection(t *testing.T) {
 	if second.Resolved.Index != 2 {
 		t.Errorf("salary index = %d, want 2", second.Resolved.Index)
 	}
+	if query.Output[0].Type != catalog.TypeText || query.Output[1].Type != catalog.TypeInteger {
+		t.Errorf("output types = %s, %s, want text, integer", query.Output[0].Type, query.Output[1].Type)
+	}
 }
 
 func TestResolveStarExpandsInSchemaOrder(t *testing.T) {
@@ -106,6 +110,19 @@ func TestResolveStarExpandsInSchemaOrder(t *testing.T) {
 		}
 		if ref.Resolved.Index != index {
 			t.Errorf("output %d index = %d, want %d", index, ref.Resolved.Index, index)
+		}
+	}
+
+	wantTypes := []catalog.Type{
+		catalog.TypeInteger,
+		catalog.TypeText,
+		catalog.TypeInteger,
+		catalog.TypeInteger,
+		catalog.TypeBoolean,
+	}
+	for index, want := range wantTypes {
+		if query.Output[index].Type != want {
+			t.Errorf("output %d type = %s, want %s", index, query.Output[index].Type, want)
 		}
 	}
 }
@@ -385,6 +402,78 @@ func TestResolveMissingWhereAndOrderBy(t *testing.T) {
 	if query.OrderBy != nil {
 		t.Errorf("order by = %v, want nil", query.OrderBy)
 	}
+}
+
+func TestResolveInfersOutputTypes(t *testing.T) {
+	query := mustResolve(t, `SELECT name, salary, salary + 0.5, active, NULL, name = 'x' FROM employees`)
+
+	want := []catalog.Type{
+		catalog.TypeText,
+		catalog.TypeInteger,
+		catalog.TypeDecimal,
+		catalog.TypeBoolean,
+		catalog.TypeNull,
+		catalog.TypeBoolean,
+	}
+	if len(query.Output) != len(want) {
+		t.Fatalf("output = %d, want %d", len(query.Output), len(want))
+	}
+	for index, expected := range want {
+		if query.Output[index].Type != expected {
+			t.Errorf("output %d type = %s, want %s", index, query.Output[index].Type, expected)
+		}
+	}
+}
+
+func TestResolveRejectsTypeErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+		want string
+	}{
+		{"text arithmetic", "SELECT name + 1 FROM employees", "requires numeric operands, found text on the left"},
+		{"not integer", "SELECT NOT salary FROM employees", "NOT requires a boolean operand"},
+		{"where integer", "SELECT * FROM employees WHERE salary", "WHERE requires a boolean predicate, found integer"},
+		{"where text", "SELECT * FROM employees WHERE name", "WHERE requires a boolean predicate, found text"},
+		{"order by text arithmetic", "SELECT name FROM employees ORDER BY name + 1", "requires numeric operands"},
+		{"compare text with integer", "SELECT name = 1 FROM employees", "Cannot compare text with integer"},
+		{"boolean ordering", "SELECT active < TRUE FROM employees", "no boolean ordering"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := typeFailure(t, test.sql)
+			if err.Code != eval.CodeTypeError {
+				t.Errorf("code = %q, want type_error", err.Code)
+			}
+			if !strings.Contains(err.Message, test.want) {
+				t.Errorf("message = %q, want it to contain %q", err.Message, test.want)
+			}
+		})
+	}
+}
+
+func TestResolveAcceptsNullPredicate(t *testing.T) {
+	query := mustResolve(t, "SELECT name FROM employees WHERE NULL")
+
+	if query.Where == nil {
+		t.Fatal("where = nil, want the NULL literal")
+	}
+}
+
+func typeFailure(t *testing.T, sql string) *eval.Error {
+	t.Helper()
+
+	_, err := resolve(t, sql)
+	if err == nil {
+		t.Fatalf("Resolve(%q) succeeded, want an error", sql)
+	}
+
+	var evalErr *eval.Error
+	if !errors.As(err, &evalErr) {
+		t.Fatalf("Resolve(%q) error = %T, want *eval.Error", sql, err)
+	}
+	return evalErr
 }
 
 func collectRefs(expr sqlparse.Expression) []*sqlparse.ColumnRef {

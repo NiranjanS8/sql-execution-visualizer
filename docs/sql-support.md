@@ -6,7 +6,7 @@ This table is the contract. It is updated in the same change that implements a f
 
 ## Status
 
-Phase 3 implements parsing and name resolution. A supported statement is turned into a validated internal structure; **no query is executed yet** — operators and the planner arrive in Phases 5–6. Unsupported syntax is rejected at parse time, before any name is resolved.
+Phase 4 implements parsing, name resolution, static type checking, and expression evaluation. A supported statement is turned into a validated structure whose output columns carry inferred types, and every expression can be evaluated against a row. **No query is executed yet** — operators and the planner arrive in Phases 5–6. Unsupported syntax is rejected at parse time, before any name is resolved.
 
 ## Supported now
 
@@ -64,27 +64,49 @@ These are rejected with `unsupported_syntax`, not approximated:
 
 ## Semantics
 
-Decided in [ADR 0002](decisions/0002-value-and-schema-model.md) and covered by tests:
+Decided in [ADR 0002](decisions/0002-value-and-schema-model.md) and [ADR 0005](decisions/0005-expression-semantics.md), and covered by tests.
+
+### Types and coercion
 
 - Four logical types: `boolean`, `integer`, `decimal`, `text`. `NULL` is a value, never a column type.
 - `NULL` is distinct from `''`, `0`, and `false`, and never coerces to them.
-- Values are copied, never aliased. No implicit coercion between types.
-- `decimal` is currently IEEE-754 binary64 — **not** exact decimal arithmetic.
+- There is no implicit coercion between text, boolean, and numeric types. `name + 1` is a `type_error`, not a guess.
+- The one widening rule: integer and decimal may be combined. Arithmetic returns `integer` when both operands are integer, otherwise `decimal`. Comparison converts the integer to binary64.
+- `decimal` is IEEE-754 binary64, **not** exact decimal arithmetic. `0.1 + 0.2` is not exactly `0.3`, and integers beyond 2^53 lose precision when mixed with decimal. This is accepted debt, documented rather than hidden.
 
-Still to be decided before the feature ships:
+### NULL and three-valued logic
 
-| Question | Decided in |
+- Arithmetic and comparison with `NULL` produce `NULL`.
+- `NOT NULL` is `NULL`.
+- `AND` and `OR` follow the SQL truth tables: `FALSE AND NULL` is `FALSE`; `TRUE OR NULL` is `TRUE`; `NULL AND TRUE` is `NULL`; `NULL OR FALSE` is `NULL`.
+- `IS NULL` and `IS NOT NULL` always return `TRUE` or `FALSE`.
+- `AND` and `OR` evaluate left to right and short-circuit when the left operand decides the result, so a right-hand error is not raised in that case.
+
+### Arithmetic
+
+- `+`, `-`, `*`, `/`, and unary `-` require numeric operands.
+- Integer division truncates toward zero: `7 / 2 = 3`, `-7 / 2 = -3`.
+- Division by zero is an `execution_error`, never `NULL` or Infinity.
+- Integer overflow is an `execution_error`; it never wraps. This includes negating the minimum int64 and `MinInt64 / -1`.
+- A decimal result that is infinite or NaN is an `execution_error`.
+
+### Comparison and ordering
+
+- `=` and `!=` work for all types, with the numeric widening rule above.
+- `<`, `<=`, `>`, and `>=` work for integer, decimal, and text. Booleans have no ordering; use `=` or `!=`.
+- Text comparison is byte-wise and case-sensitive: `'B' < 'a'` is true.
+- `WHERE` must be boolean. A `NULL` predicate is allowed and matches no rows. Output columns carry their inferred type.
+
+Open questions:
+
+| Question | Status |
 | --- | --- |
-| `NULL` propagation through arithmetic, comparison, and boolean operators | Phase 4 |
-| Numeric overflow policy (error versus saturation) | Phase 4 |
-| Integer versus decimal division, and division by zero | Phase 4 |
-| String comparison rules (byte order, case sensitivity) | Phase 4 |
-| Whether `decimal` becomes exact arithmetic | Phase 4 |
 | Whether an empty result is distinguishable from a zero-row result | Phase 5 |
+| Whether `decimal` becomes exact arithmetic | Deferred; binary64 is accepted debt (ADR 0005) |
 
 ## Reading errors
 
-Errors carry a stable `code` and a 1-based line and column where the parser or validator can supply one:
+Errors carry a stable `code` and a 1-based line and column where the parser, validator, or evaluator can supply one:
 
 ```json
 {
@@ -103,5 +125,7 @@ Errors carry a stable `code` and a 1-based line and column where the parser or v
 | `unknown_table` | `internal/validate` | The `FROM` table, or a qualifier, does not resolve. |
 | `unknown_column` | `internal/validate` | A column reference does not resolve. |
 | `ambiguous_column` | `internal/validate` | A column reference matches more than one source. |
+| `type_error` | `internal/eval`, `internal/validate` | An operator cannot accept its operand types, or `WHERE` is not boolean. |
+| `execution_error` | `internal/eval` | Evaluation failed: division by zero, numeric overflow, or an unbound column. |
 
 A single-table query cannot produce `ambiguous_column`: table schemas reject duplicate column names. The resolver already handles multiple sources, so the check is in place for Phase 10.

@@ -37,7 +37,8 @@ Data flows one way. Each layer depends on the one below it; none of them depend 
 | `internal/catalog` | Tables, schemas, typed rows, registry | 1 |
 | `internal/dataset` | Dataset grouping, CSV parsing, type inference, import limits | 2 |
 | `internal/sqlparse` | Lexer, recursive-descent parser, QueryLens AST, syntax errors | Implemented (Phase 3) |
-| `internal/validate` | Name resolution, wildcard expansion, output naming, ambiguity checks | Implemented (Phase 3) |
+| `internal/validate` | Name resolution, wildcard expansion, output naming/types, type checks | Implemented (Phases 3–4) |
+| `internal/eval` | Expression type inference, evaluation, three-valued NULL logic | Implemented (Phase 4) |
 | `internal/planner` | Logical operator tree construction | 6 |
 | `internal/execution` | Operator implementations and execution context | 5 |
 | `internal/metrics` | Per-operator instrumentation and bounded samples | 7 |
@@ -64,15 +65,17 @@ API DTOs (`types/`) are separate from view models. React Flow node objects are c
 
 Values are typed, not stringly. `NULL` is a distinct value, never an empty string or zero. Rows carry schema metadata so a column stays identifiable after a join introduces duplicate names.
 
+Expressions are type-checked before they run, and `NULL` follows SQL three-valued logic rather than ordinary boolean behaviour. The rules are in [ADR 0005](decisions/0005-expression-semantics.md).
+
 The initial execution model is pull-based iterators, because operator composition and instrumentation are simpler to reason about than a push model. Cancellation is passed through the execution context and checked inside long-running operators.
 
 ## Current implementation status
 
-Phases 0–3 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, planner, or executor yet.
+Phases 0–4 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, planner, or executor yet.
 
 CSV import is deliberately conservative: it infers only `integer`, `decimal`, `boolean`, and `text`, treats empty fields and configured tokens as NULL, keeps identifier-like numerics (leading zeros) and int64 overflows as text, and reports adjusted headers before commit. The full contract is in [api.md](api.md) and [ADR 0003](decisions/0003-csv-import.md).
 
-SQL text is now parsed and validated. `internal/sqlparse` is a hand-written lexer and recursive-descent parser for the subset in [sql-support.md](sql-support.md); `internal/validate` binds tables and columns, expands wildcards, and detects unknown or ambiguous names. Nothing executes a query yet, and no query endpoint exists. See [ADR 0004](decisions/0004-sql-parser.md).
+SQL text is parsed, validated, and type-checked. `internal/sqlparse` is a hand-written lexer and recursive-descent parser for the subset in [sql-support.md](sql-support.md); `internal/validate` binds tables and columns, expands wildcards, detects unknown or ambiguous names, and rejects incompatible operand types; `internal/eval` infers output types and evaluates expressions with SQL three-valued NULL logic. Nothing executes a query yet, and no query endpoint exists. See [ADR 0004](decisions/0004-sql-parser.md) and [ADR 0005](decisions/0005-expression-semantics.md).
 
 ## Assumptions
 
@@ -86,7 +89,7 @@ SQL text is now parsed and validated. `internal/sqlparse` is a hand-written lexe
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| SQL parser choice locks in a dialect or has a thin AST | Supported-subset work becomes adapter work | Keep parser types behind `internal/sqlparse`; the rest of the codebase sees QueryLens types only |
+| SQL parser choice locks in a dialect or has a thin AST | Supported-subset work becomes adapter work | The grammar and AST stay in `internal/sqlparse`; the rest of the codebase sees QueryLens types only |
 | Scope creep toward "real database" | Core workflow never finishes | Non-goals are explicit; unsupported syntax returns a clear error |
 | Instrumentation distorts results or bloats memory | Wrong answers, OOM on wide plans | Sample limits are enforced by the recorder; instrumentation is tested to be result-neutral |
 | Three-panel layout becomes cramped on laptops | Product feels unusable below 1280px | Panels collapse; tablet and mobile fall back to drawers and a list view |

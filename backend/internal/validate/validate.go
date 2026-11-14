@@ -1,9 +1,10 @@
 // Package validate resolves a parsed SELECT against the catalog.
 //
 // It binds every table and column reference to a concrete catalog table and
-// column, expands wildcards, derives output names, and rejects references that
-// are unknown or ambiguous. Type checking belongs to expression evaluation; this
-// package only answers "what does this name point at?".
+// column, expands wildcards, derives output names and types, and rejects
+// references that are unknown, ambiguous, or used with incompatible types. Type
+// rules themselves live in internal/eval; this package applies them to a whole
+// statement so execution only sees a checked query.
 package validate
 
 import (
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/catalog"
+	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/eval"
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/sqlparse"
 )
 
@@ -31,9 +33,11 @@ func (s Source) Qualifier() string {
 	return s.Table.Name
 }
 
-// OutputColumn is one column of the query result.
+// OutputColumn is one column of the query result. Type is the inferred static
+// type of Expr; it is TypeNull when the expression is the NULL literal.
 type OutputColumn struct {
 	Name string
+	Type catalog.Type
 	Expr sqlparse.Expression
 }
 
@@ -65,6 +69,9 @@ func Resolve(stmt *sqlparse.Select, tables *catalog.Catalog) (*Query, error) {
 
 	if stmt.Where != nil {
 		if err := bind(stmt.Where, sources); err != nil {
+			return nil, err
+		}
+		if err := checkPredicate(stmt.Where); err != nil {
 			return nil, err
 		}
 	}
@@ -100,13 +107,18 @@ func resolveProjection(items []sqlparse.SelectItem, sources []Source) ([]OutputC
 			return nil, err
 		}
 
+		typ, err := eval.Infer(item.Expr)
+		if err != nil {
+			return nil, err
+		}
+
 		name := item.Alias
 		if name == "" {
 			if ref, ok := item.Expr.(*sqlparse.ColumnRef); ok && ref.Resolved != nil {
 				name = ref.Resolved.Column.Name
 			}
 		}
-		output = append(output, OutputColumn{Name: name, Expr: item.Expr})
+		output = append(output, OutputColumn{Name: name, Type: typ, Expr: item.Expr})
 	}
 
 	for i := range output {
@@ -141,7 +153,7 @@ func expandStar(star *sqlparse.Star, sources []Source) ([]OutputColumn, error) {
 					Index:  index,
 				},
 			}
-			output = append(output, OutputColumn{Name: column.Name, Expr: ref})
+			output = append(output, OutputColumn{Name: column.Name, Type: column.Type, Expr: ref})
 		}
 	}
 
@@ -170,9 +182,31 @@ func resolveOrderBy(items []sqlparse.OrderItem, sources []Source, output []Outpu
 			}
 			return nil, err
 		}
+
+		if _, err := eval.Infer(item.Expr); err != nil {
+			return nil, err
+		}
 	}
 
 	return items, nil
+}
+
+// checkPredicate requires a WHERE clause to be boolean. A NULL predicate is
+// allowed and behaves as unknown, so no row matches it.
+func checkPredicate(expr sqlparse.Expression) error {
+	typ, err := eval.Infer(expr)
+	if err != nil {
+		return err
+	}
+	if typ != catalog.TypeBoolean && typ != catalog.TypeNull {
+		return &eval.Error{
+			Code:    eval.CodeTypeError,
+			Message: fmt.Sprintf("WHERE requires a boolean predicate, found %s.", typ),
+			Line:    expr.Position().Line,
+			Column:  expr.Position().Column,
+		}
+	}
+	return nil
 }
 
 func outputAlias(expr sqlparse.Expression, output []OutputColumn) string {
