@@ -6,7 +6,7 @@ This table is the contract. It is updated in the same change that implements a f
 
 ## Status
 
-Phase 5 implements parsing, name resolution, static type checking, expression evaluation, and the pull-based operators that run a single-table query: scan, filter, sort, project, and limit. A supported statement is turned into a validated structure whose output columns carry inferred types, and the operators can execute it. **No HTTP query endpoint exists yet** — the planner and query API arrive in Phases 6 and 8. Unsupported syntax is rejected at parse time, before any name is resolved.
+Phase 6 implements parsing, name resolution, static type checking, expression evaluation, logical planning, and the pull-based operators that run a single-table query: scan, filter, sort, project, and limit. A supported statement is turned into a validated structure whose output columns carry inferred types, then into an inspectable plan that executes end to end. **No HTTP query endpoint exists yet** — it arrives in Phase 8. Unsupported syntax is rejected at parse time, before any name is resolved.
 
 ## Supported now
 
@@ -99,7 +99,7 @@ Decided in [ADR 0002](decisions/0002-value-and-schema-model.md), [ADR 0005](deci
 
 ### Ordering and limiting
 
-- `ORDER BY` evaluates each term against the source row, so it can only reference source columns, not output aliases or positions.
+- `ORDER BY` evaluates each term against the source row, so it can only reference source columns, not output aliases or positions. The planner places sorting before projection, so ordering by a column that is not selected still works.
 - Sorting is stable: rows that compare equal keep their input order.
 - `NULL` sorts after every non-NULL value in both `ASC` and `DESC`. `DESC` reverses the order of known values only, never the placement of NULLs.
 - Boolean expressions are rejected in `ORDER BY` with `type_error`; booleans have no ordering.
