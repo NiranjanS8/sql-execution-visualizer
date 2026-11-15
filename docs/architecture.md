@@ -15,7 +15,10 @@ QueryLens is a local-first application with a Go API and a React frontend. The b
 │ routing · CORS · errors · limits            │
 ├─────────────────────────────────────────────┤
 │ Query service      internal/query           │
-│ parse → validate → plan → execute           │
+│ parse → validate → plan → execute → trace   │
+├─────────────────────────────────────────────┤
+│ Recorder           internal/metrics         │
+│ IDs · durations · row counts · samples      │
 ├─────────────────────────────────────────────┤
 │ Operators          internal/execution       │
 │ scan · filter · project · join · aggregate  │
@@ -41,7 +44,7 @@ Data flows one way. Each layer depends on the one below it; none of them depend 
 | `internal/eval` | Expression type inference, evaluation, three-valued NULL logic | Implemented (Phase 4) |
 | `internal/planner` | Logical plan tree, operator ordering, explain output, operator mapping | Implemented (Phase 6) |
 | `internal/execution` | Pull-based operators (scan, filter, sort, project, limit) and cancellation | Implemented (Phase 5) |
-| `internal/metrics` | Per-operator instrumentation and bounded samples | 7 |
+| `internal/metrics` | Per-run operator IDs, durations, row counts, bounded samples, statuses | Implemented (Phase 7) |
 | `internal/query` | Orchestrates the pipeline and assembles the response | 8 |
 
 Only `internal/api` and `internal/query` know about HTTP. Execution operators know nothing about the browser, the graph DTOs, or JSON.
@@ -71,11 +74,11 @@ The execution model is pull-based iterators, because operator composition and in
 
 ## Current implementation status
 
-Phases 0–6 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, query endpoint, or execution graph yet.
+Phases 0–7 are implemented. The API exposes health, dataset import (CSV), dataset and table metadata, and paginated row previews. Data lives in memory and is lost on restart. The frontend is a dataset explorer with schema inspection and a bounded row grid; there is no SQL editor, query endpoint, or execution graph yet.
 
 CSV import is deliberately conservative: it infers only `integer`, `decimal`, `boolean`, and `text`, treats empty fields and configured tokens as NULL, keeps identifier-like numerics (leading zeros) and int64 overflows as text, and reports adjusted headers before commit. The full contract is in [api.md](api.md) and [ADR 0003](decisions/0003-csv-import.md).
 
-SQL text is parsed, validated, type-checked, planned, and executable. `internal/sqlparse` is a hand-written lexer and recursive-descent parser for the subset in [sql-support.md](sql-support.md); `internal/validate` binds tables and columns, expands wildcards, detects unknown or ambiguous names, and rejects incompatible operand types; `internal/eval` infers output types and evaluates expressions with SQL three-valued NULL logic; `internal/planner` turns a validated query into an inspectable logical plan (`Scan → Filter → Sort → Project → Limit`) and maps it to operators; `internal/execution` runs that operator chain. There is no query endpoint yet, so execution is only reachable from tests. See [ADR 0004](decisions/0004-sql-parser.md), [ADR 0005](decisions/0005-expression-semantics.md), [ADR 0006](decisions/0006-execution-operators.md), and [ADR 0007](decisions/0007-logical-planner.md).
+SQL text is parsed, validated, type-checked, planned, and executable. `internal/sqlparse` is a hand-written lexer and recursive-descent parser for the subset in [sql-support.md](sql-support.md); `internal/validate` binds tables and columns, expands wildcards, detects unknown or ambiguous names, and rejects incompatible operand types; `internal/eval` infers output types and evaluates expressions with SQL three-valued NULL logic; `internal/planner` turns a validated query into an inspectable logical plan (`Scan → Filter → Sort → Project → Limit`) and maps it to operators; `internal/execution` runs that operator chain; `internal/metrics` wraps the chain per run and records stable IDs, exclusive durations, input/output row counts, bounded samples, and per-operator statuses. There is no query endpoint yet, so execution and its trace are only reachable from tests. See [ADR 0004](decisions/0004-sql-parser.md), [ADR 0005](decisions/0005-expression-semantics.md), [ADR 0006](decisions/0006-execution-operators.md), [ADR 0007](decisions/0007-logical-planner.md), and [ADR 0008](decisions/0008-execution-recorder.md).
 
 ## Assumptions
 

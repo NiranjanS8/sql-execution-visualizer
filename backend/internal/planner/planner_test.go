@@ -446,6 +446,57 @@ func TestBuildOperatorsRejectsNilPlan(t *testing.T) {
 	}
 }
 
+func TestBuildOperatorsRejectsMultipleInputs(t *testing.T) {
+	scan := NewScan(sampleTable(t, "employees"))
+	node := multiInputNode{children: []Node{scan, scan}}
+
+	if _, err := BuildOperators(&Plan{Root: node}); err == nil {
+		t.Fatal("BuildOperators with two inputs succeeded, want an error")
+	} else if !strings.Contains(err.Error(), "only one is supported") {
+		t.Errorf("error = %q, want it to mention the input limit", err)
+	}
+}
+
+func TestBuildOperatorRequiresInput(t *testing.T) {
+	scan := NewScan(sampleTable(t, "employees"))
+	ref := &sqlparse.ColumnRef{
+		Name: "name",
+		Pos:  testPos,
+		Resolved: &sqlparse.ResolvedColumn{
+			Column: catalog.Column{Name: "name", Type: catalog.TypeText},
+			Index:  1,
+		},
+	}
+	project, err := NewProject(scan, Column{Name: "name", Type: catalog.TypeText, Expr: ref})
+	if err != nil {
+		t.Fatalf("NewProject: %v", err)
+	}
+	limit, err := NewLimit(scan, 1)
+	if err != nil {
+		t.Fatalf("NewLimit: %v", err)
+	}
+
+	tests := []struct {
+		name string
+		node Node
+	}{
+		{"filter", NewFilter(scan, &sqlparse.Literal{Value: catalog.Bool(true), Pos: testPos})},
+		{"sort", NewSort(scan, SortTerm{Expr: &sqlparse.Literal{Value: catalog.Int(1), Pos: testPos}})},
+		{"project", project},
+		{"limit", limit},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := BuildOperator(test.node, nil); err == nil {
+				t.Fatal("BuildOperator without an input succeeded, want an error")
+			} else if !strings.Contains(err.Error(), "no input") {
+				t.Errorf("error = %q, want it to mention the missing input", err)
+			}
+		})
+	}
+}
+
 func TestExplainWithoutRoot(t *testing.T) {
 	if got := (&Plan{}).Explain(); got != "" {
 		t.Errorf("Explain() = %q, want an empty string", got)
@@ -458,6 +509,15 @@ func (unknownNode) Kind() Kind             { return Kind("mystery") }
 func (unknownNode) Children() []Node       { return nil }
 func (unknownNode) Schema() catalog.Schema { return catalog.Schema{} }
 func (unknownNode) Describe() string       { return "" }
+
+type multiInputNode struct {
+	children []Node
+}
+
+func (n multiInputNode) Kind() Kind             { return Kind("mystery") }
+func (n multiInputNode) Children() []Node       { return n.children }
+func (n multiInputNode) Schema() catalog.Schema { return catalog.Schema{} }
+func (n multiInputNode) Describe() string       { return "" }
 
 func sampleTable(t *testing.T, name string) *catalog.Table {
 	t.Helper()

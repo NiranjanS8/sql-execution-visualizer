@@ -3,8 +3,8 @@
 //
 // The plan is data: each node names its kind, its input, and the configuration
 // the executor needs. It is deliberately independent of JSON, React Flow, and
-// the HTTP layer. Phase 7 adds per-run IDs and metrics; Phase 9 maps plan nodes
-// to graph nodes.
+// the HTTP layer. Phase 7 instruments the plan in internal/metrics; Phase 9 maps
+// plan nodes to graph nodes.
 //
 // The planner never re-parses or re-resolves SQL. It consumes a
 // *validate.Query, whose expressions are already bound and type-checked.

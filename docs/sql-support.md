@@ -6,7 +6,7 @@ This table is the contract. It is updated in the same change that implements a f
 
 ## Status
 
-Phase 6 implements parsing, name resolution, static type checking, expression evaluation, logical planning, and the pull-based operators that run a single-table query: scan, filter, sort, project, and limit. A supported statement is turned into a validated structure whose output columns carry inferred types, then into an inspectable plan that executes end to end. **No HTTP query endpoint exists yet** — it arrives in Phase 8. Unsupported syntax is rejected at parse time, before any name is resolved.
+Phase 7 implements parsing, name resolution, static type checking, expression evaluation, logical planning, the pull-based operators that run a single-table query (scan, filter, sort, project, and limit), and per-run execution metrics. A supported statement is turned into a validated structure whose output columns carry inferred types, then into an inspectable plan that executes end to end while the recorder captures stable IDs, durations, row counts, statuses, and bounded samples. Instrumentation does not change the result rows. **No HTTP query endpoint exists yet** — it arrives in Phase 8. Unsupported syntax is rejected at parse time, before any name is resolved.
 
 ## Supported now
 

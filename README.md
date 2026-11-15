@@ -4,7 +4,7 @@ A local-first, visual SQL execution engine for learning, debugging, and understa
 
 Load a dataset, write a query, run it, and see two things at once: the rows that came back, and a graph of the operators that produced them — each with its real row counts, duration, and configuration.
 
-> **Status: Phase 6 — logical planner.** The backend imports CSV files into in-memory datasets, parses and type-checks the supported SQL subset, plans single-table queries into an inspectable operator tree, and runs them through pull-based scan, filter, sort, project, and limit operators. Unsupported syntax and invalid operand types fail loudly before execution. The frontend is a dataset explorer with schema inspection and a bounded row preview. The query API and execution graph are not implemented yet. See [docs/roadmap.md](docs/roadmap.md) and [docs/sql-support.md](docs/sql-support.md).
+> **Status: Phase 7 — execution recorder.** The backend imports CSV files into in-memory datasets, parses and type-checks the supported SQL subset, plans single-table queries into an inspectable operator tree, runs them through pull-based scan, filter, sort, project, and limit operators, and records per-run operator IDs, durations, row counts, statuses, and bounded samples. Unsupported syntax and invalid operand types fail loudly before execution. The frontend is a dataset explorer with schema inspection and a bounded row preview. The query API and execution graph are not implemented yet. See [docs/roadmap.md](docs/roadmap.md) and [docs/sql-support.md](docs/sql-support.md).
 
 ## Why
 
@@ -71,7 +71,7 @@ The frontend reads build-time Vite variables.
 .
 ├── backend/            Go API server
 │   ├── cmd/querylens/  process entry point
-│   └── internal/       api, config, catalog, dataset, sqlparse, validate, eval, planner, execution
+│   └── internal/       api, config, catalog, dataset, sqlparse, validate, eval, planner, execution, metrics
 ├── frontend/           React + TypeScript + Vite application
 │   └── src/
 │       ├── app/        shell, providers, routes
