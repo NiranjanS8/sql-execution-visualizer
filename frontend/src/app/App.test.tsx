@@ -82,8 +82,30 @@ const queryBody = {
         rowsOut: 1,
         durationMs: 0.5,
         status: "completed",
-        input: { columns: [], rows: [], truncated: false },
+        input: {
+          columns,
+          rows: [["1", "Ada Lovelace", "145000", "10", true]],
+          truncated: true,
+        },
         output: { columns: queryColumns, rows: [["Ada Lovelace", "145000"]], truncated: false },
+      },
+      {
+        id: "n2",
+        kind: "scan",
+        label: "employees",
+        parentId: "n1",
+        children: [],
+        columns,
+        rowsIn: 0,
+        rowsOut: 8,
+        durationMs: 0.3,
+        status: "completed",
+        input: { columns: [], rows: [], truncated: false },
+        output: {
+          columns,
+          rows: [["1", "Ada Lovelace", "145000", "10", true]],
+          truncated: true,
+        },
       },
     ],
     edges: [{ from: "n1", to: "n2" }],
@@ -133,10 +155,7 @@ function mockApi() {
         return jsonResponse(queryBody);
       }
       default:
-        return jsonResponse(
-          { error: { code: "not_found", message: `No mock for ${path}` } },
-          404,
-        );
+        return jsonResponse({ error: { code: "not_found", message: `No mock for ${path}` } }, 404);
     }
   });
 }
@@ -239,5 +258,26 @@ describe("App", () => {
     expect(within(results).getByText("type_error")).toBeInTheDocument();
     expect(within(results).getByText(/showing the last successful result/i)).toBeInTheDocument();
     expect(within(results).getByText("Ada Lovelace")).toBeInTheDocument();
+  });
+
+  it("shows the execution plan and inspects an operator after a run", async () => {
+    renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /employees/i }));
+    fireEvent.click(screen.getByRole("tab", { name: "Query" }));
+    fireEvent.click(screen.getByRole("button", { name: /^run$/i }));
+    expect(await screen.findByText("Ada Lovelace")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Execution plan" }));
+
+    const plan = screen.getByRole("region", { name: "Execution plan" });
+    expect(within(plan).getByText("2 operators")).toBeInTheDocument();
+    expect(within(plan).getByText("Project")).toBeInTheDocument();
+    expect(within(plan).getByText("Scan")).toBeInTheDocument();
+
+    fireEvent.click(within(plan).getByText("Scan"));
+
+    expect(within(plan).getByText("OPERATOR · n2")).toBeInTheDocument();
+    expect(within(plan).getAllByText("employees").length).toBeGreaterThan(0);
   });
 });

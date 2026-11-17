@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Database, Upload } from "lucide-react";
 
 import { Button } from "../../components/ui/Button";
+import { TabButton } from "../../components/ui/TabButton";
 import { cn } from "../../lib/cn";
 import { HealthPanel } from "../health/HealthPanel";
 import { DatasetExplorer, type TableSelection } from "../datasets/DatasetExplorer";
@@ -32,33 +33,6 @@ function EmptyDetail({ onImport, hasDatasets }: { onImport: () => void; hasDatas
         </Button>
       ) : null}
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "h-9 border-b-2 px-3 text-xs font-medium transition-colors",
-        active
-          ? "border-accent text-ink"
-          : "border-transparent text-ink-muted hover:text-ink",
-      )}
-    >
-      {children}
-    </button>
   );
 }
 

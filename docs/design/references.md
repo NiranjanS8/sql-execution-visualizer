@@ -43,6 +43,7 @@ What each reference was studied for, and what was actually taken from it. Nothin
 | Styling | Tailwind CSS v4 | CSS-first tokens; no config file to drift from the design system |
 | Icons | Lucide | One library, consistent stroke weight |
 | Server state | TanStack Query | Added in Phase 0 with the first real request |
-| Graph | React Flow | Phase 9; layout via Dagre or ELK, decided then |
+| Graph | React Flow 13 | Phase 9; custom operator nodes, selection-driven inspector, built-in pan/zoom/minimap |
+| Graph layout | Dagre 3 | Phase 9; top-down single-parent operator chains; ELK judged heavier than needed |
 | Editor | CodeMirror 6 | Chosen in Phase 8; SQL highlighting and `Mod-Enter`, lighter than Monaco for this scope |
 | Tables | Hand-rolled `DataGrid` | Phase 8; the grid is fixed-column and small enough that TanStack Table would add weight without benefit. Revisit if sorting or column resizing arrives |

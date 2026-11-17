@@ -4,7 +4,7 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 
 ## Current position
 
-**Phase 0 — complete. UI Phases A, C, D, E — complete. Phases 1–8 — complete.** Next: Phase 9 (interactive execution-plan visualization).
+**Phase 0 — complete. UI Phases A, C, D, E, F — complete. Phases 1–9 — complete.** Next: Phase 10 (joins and multi-table queries).
 
 ## Engineering phases
 
@@ -19,8 +19,8 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 | 6 | Logical planner and end-to-end single-table queries | ✅ Complete |
 | 7 | Execution recorder and plan metadata | ✅ Complete |
 | 8 | Query API and result presentation | ✅ Complete |
-| 9 | Interactive execution-plan visualization | Next |
-| 10 | Joins and multi-table queries | — |
+| 9 | Interactive execution-plan visualization | ✅ Complete |
+| 10 | Joins and multi-table queries | Next |
 | 11 | Aggregation and grouping | — |
 | 12 | SQL editor and product polish | — |
 | 13 | Reliability, security, performance, release | — |
@@ -34,8 +34,8 @@ Two plans run in parallel. The engineering plan builds the engine; the design pl
 | C | Dataset explorer | ✅ Complete |
 | D | SQL editor | ✅ Complete |
 | E | Results grid | ✅ Complete |
-| F | Execution graph and operator inspector | Next |
-| G | History, settings, polish | — |
+| F | Execution graph and operator inspector | ✅ Complete |
+| G | History, settings, polish | Next |
 | H | Visual QA and release readiness | — |
 
 ## Sequencing notes

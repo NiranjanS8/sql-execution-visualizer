@@ -1,5 +1,8 @@
+@layer theme, base, xyflow, components, utilities;
+
 @import "tailwindcss";
 @import "./tokens.css";
+@import "@xyflow/react/dist/style.css";
 
 @layer base {
   html,
@@ -55,4 +58,65 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/*
+ * React Flow is themed through its CSS variables so the graph follows the same
+ * tokens as the rest of the workbench. These rules are unlayered on purpose:
+ * they must win over the defaults shipped in the `xyflow` layer.
+ */
+.react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: var(--ql-line-strong);
+  --xy-edge-stroke-selected: var(--ql-accent);
+  --xy-edge-stroke-width: 1.5;
+  --xy-handle-background-color: var(--ql-line-strong);
+  --xy-handle-border-color: var(--ql-panel);
+  --xy-minimap-background-color: var(--ql-panel);
+  --xy-minimap-node-background-color: var(--ql-line-strong);
+  --xy-controls-button-background-color: var(--ql-panel);
+  --xy-controls-button-background-color-hover: var(--ql-hover);
+  --xy-controls-button-color: var(--ql-ink-muted);
+  --xy-controls-button-color-hover: var(--ql-ink);
+  --xy-controls-button-border-color: var(--ql-line);
+  --xy-controls-box-shadow: none;
+  --xy-attribution-background-color: transparent;
+}
+
+.react-flow__node {
+  font-family: var(--font-sans);
+}
+
+.react-flow__edge-path {
+  transition:
+    stroke 120ms ease,
+    opacity 120ms ease;
+}
+
+.react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--ql-line);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+
+.react-flow__controls-button {
+  background: var(--ql-panel);
+  border-bottom: 1px solid var(--ql-line);
+  color: var(--ql-ink-muted);
+}
+
+.react-flow__controls-button:hover {
+  background: var(--ql-hover);
+  color: var(--ql-ink);
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.react-flow__minimap {
+  overflow: hidden;
+  border: 1px solid var(--ql-line);
+  border-radius: var(--radius-sm);
 }

@@ -3,7 +3,10 @@ import { Play, Square } from "lucide-react";
 
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { TabButton } from "../../components/ui/TabButton";
+import { cn } from "../../lib/cn";
 import type { Column } from "../../types/dataset";
+import { ExecutionPlanView } from "../execution-plan/ExecutionPlanView";
 import { useTable } from "../datasets/useDatasets";
 import { QueryResults } from "./QueryResults";
 import { SqlEditor } from "./SqlEditor";
@@ -45,9 +48,7 @@ function examplesFor(tableName: string, columns: Column[]): Example[] {
     });
   }
 
-  const numeric = columns.find(
-    (column) => column.type === "integer" || column.type === "decimal",
-  );
+  const numeric = columns.find((column) => column.type === "integer" || column.type === "decimal");
   if (numeric) {
     const name = quoteIdentifier(numeric.name);
     examples.push({
@@ -78,7 +79,11 @@ export function QueryWorkbench({
   const table = useTable(datasetId, tableId);
   const [sql, setSql] = useState(() => defaultSQL(tableName));
   const [example, setExample] = useState("");
+  const [outputTab, setOutputTab] = useState<"results" | "plan">("results");
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const query = useQueryRun(datasetId);
+
+  const runId = query.result?.queryRunId ?? null;
 
   const examples = useMemo(
     () => examplesFor(tableName, table.data?.columns ?? []),
@@ -91,6 +96,7 @@ export function QueryWorkbench({
     if (!canRun) {
       return;
     }
+    setSelectedNodeId(null);
     query.run(sql);
   };
 
@@ -148,7 +154,41 @@ export function QueryWorkbench({
         <section aria-label="SQL editor" className="min-h-0 border-b border-line bg-panel">
           <SqlEditor value={sql} onChange={setSql} onRun={handleRun} visible={visible} />
         </section>
-        <QueryResults state={query} />
+
+        <div className="flex min-h-0 flex-col">
+          <div
+            role="tablist"
+            aria-label="Query output"
+            className="flex h-9 shrink-0 items-center gap-1 border-b border-line px-4"
+          >
+            <TabButton active={outputTab === "results"} onClick={() => setOutputTab("results")}>
+              Results
+            </TabButton>
+            <TabButton active={outputTab === "plan"} onClick={() => setOutputTab("plan")}>
+              Execution plan
+            </TabButton>
+            {query.result ? (
+              <span className="ml-auto font-mono text-[10px] text-ink-faint">
+                {query.result.execution.nodes.length} operators
+              </span>
+            ) : null}
+          </div>
+
+          <div className="min-h-0 flex-1">
+            <div className={cn("h-full", outputTab !== "results" && "hidden")}>
+              <QueryResults state={query} />
+            </div>
+            <div className={cn("h-full", outputTab !== "plan" && "hidden")}>
+              <ExecutionPlanView
+                key={runId ?? "no-run"}
+                state={query}
+                selectedNodeId={selectedNodeId}
+                onSelectNode={setSelectedNodeId}
+                active={visible && outputTab === "plan"}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

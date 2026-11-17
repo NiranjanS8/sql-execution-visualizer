@@ -1,18 +1,10 @@
-import { AlertTriangle, Ban, CircleAlert, Clock3 } from "lucide-react";
+import { Ban, CircleAlert, Clock3 } from "lucide-react";
 
 import { DataGrid } from "../../components/data/DataGrid";
 import { cn } from "../../lib/cn";
+import { formatDuration } from "../../lib/format";
+import { StaleNotice } from "./StaleNotice";
 import type { QueryRunState } from "./useQueryRun";
-
-function formatDuration(milliseconds: number): string {
-  if (milliseconds < 1) {
-    return "<1 ms";
-  }
-  if (milliseconds < 1000) {
-    return `${milliseconds.toFixed(1)} ms`;
-  }
-  return `${(milliseconds / 1000).toFixed(2)} s`;
-}
 
 function ErrorNotice({ state }: { state: QueryRunState }) {
   const { error } = state;
@@ -43,18 +35,6 @@ function ErrorNotice({ state }: { state: QueryRunState }) {
   );
 }
 
-function StaleNotice() {
-  return (
-    <div
-      role="status"
-      className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning"
-    >
-      <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-      Showing the last successful result. The latest run did not complete.
-    </div>
-  );
-}
-
 export function QueryResults({ state }: { state: QueryRunState }) {
   const { result, status, stale } = state;
 
@@ -76,7 +56,11 @@ export function QueryResults({ state }: { state: QueryRunState }) {
               </p>
             </>
           )}
-          {status !== "running" ? <div className="mt-4 w-full max-w-md"><ErrorNotice state={state} /></div> : null}
+          {status !== "running" ? (
+            <div className="mt-4 w-full max-w-md">
+              <ErrorNotice state={state} />
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -87,8 +71,16 @@ export function QueryResults({ state }: { state: QueryRunState }) {
       <ResultsHeader state={state} />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-        {stale ? <div className="mb-3"><StaleNotice /></div> : null}
-        {state.error ? <div className="mb-3"><ErrorNotice state={state} /></div> : null}
+        {stale ? (
+          <div className="mb-3">
+            <StaleNotice />
+          </div>
+        ) : null}
+        {state.error ? (
+          <div className="mb-3">
+            <ErrorNotice state={state} />
+          </div>
+        ) : null}
         {status === "cancelled" ? (
           <div className="mb-3 flex items-center gap-2 rounded-md border border-line bg-elevated px-3 py-2 text-xs text-ink-muted">
             <Ban className="size-3.5" aria-hidden="true" />
@@ -114,10 +106,6 @@ function ResultsHeader({ state }: { state: QueryRunState }) {
 
   return (
     <div className="flex h-9 shrink-0 items-center gap-2 border-b border-line px-4">
-      <h3 className="text-[10px] font-medium tracking-[0.08em] text-ink-faint uppercase">
-        Results
-      </h3>
-
       {status === "running" ? (
         <span className="flex items-center gap-1.5 text-[11px] text-ink-muted">
           <span className="size-1.5 animate-pulse rounded-full bg-accent" aria-hidden="true" />

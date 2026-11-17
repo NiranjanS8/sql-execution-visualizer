@@ -385,7 +385,9 @@ Each execution node carries:
 | `error` | Present when the node observed a failure. |
 | `input` / `output` | Bounded row samples, each with `columns`, `rows`, and `truncated`. |
 
-A node's input sample uses its child's schema; a scan has no child, so its input columns are empty. `truncated` is true when rows flowed but were not retained.
+A node's input sample uses its child's schema; a scan has no child, so its input columns are empty and its `rowsIn` is always `0`. A consumer must not present that `0` as a measured input count: there is no input to measure, so the UI shows `—` for a scan's input.
+
+`edges` describe the pull direction: `from` is the consumer (the parent that pulls) and `to` is the producer (the child that feeds it). This matches `parentId`/`children`. A graph that draws data flowing from producer to consumer must reverse the pair for display; the frontend does this in `frontend/src/features/execution-plan/graph.ts`. The wire contract stays in pull order so it describes execution rather than presentation.
 
 Failures use the standard error envelope. Parse, resolution, and type errors are `400`; runtime evaluation and result-limit failures are `422`; a timeout or cancellation is `408`. The full mapping is in the error table above and in [ADR 0009](decisions/0009-query-api.md).
 

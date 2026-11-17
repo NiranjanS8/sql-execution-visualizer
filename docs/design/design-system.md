@@ -96,11 +96,12 @@ Light is designed, not inverted: paper-toned canvas, pure white panels, and acce
 | `SqlEditor` | feature | Built — Phase 8 (CodeMirror 6) |
 | `QueryWorkbench` | feature | Built — Phase 8 (editor, run/cancel, examples) |
 | `QueryResults` | feature | Built — Phase 8 (summary, stale/error/empty states) |
+| `TabButton` | ui | Built — Phase 9 (shared output and detail tabs) |
 | `DataGrid` | data | Built — Phase 8 (shared by table preview and results) |
-| `ExecutionGraph` | feature | UI Phase F |
-| `OperatorNode` | feature | UI Phase F |
-| `OperatorInspector` | feature | UI Phase F |
-| `OperatorList` | feature | UI Phase F (accessible alternative) |
+| `ExecutionGraph` | feature | Built — Phase 9 (React Flow canvas, fit/reset, minimap above 12 nodes) |
+| `OperatorNode` | feature | Built — Phase 9 (custom React Flow node: icon, name, configuration, metrics, status) |
+| `OperatorInspector` | feature | Built — Phase 9 (metrics, configuration, schemas, bounded samples, errors) |
+| `OperatorList` | feature | Built — Phase 9 (accessible alternative, backend pre-order with depth indentation) |
 | `QueryHistory` | feature | UI Phase G |
 | `SettingsDialog` | feature | UI Phase G |
 
@@ -119,6 +120,10 @@ Every interactive surface defines: default, hover, focus-visible, active, disabl
 
 Transitions are 120–160ms and only communicate state: node selection, panel open/close, hover, spinner during fetch. Graph edges do not animate continuously. `prefers-reduced-motion` collapses all durations to near zero.
 
+## Graph theming
+
+React Flow ships its own CSS layer. `globals.css` declares `@layer theme, base, xyflow, components, utilities;` before the Tailwind import so React Flow's defaults sit below QueryLens utilities. The graph is then themed through React Flow's CSS variables (`--xy-edge-stroke`, `--xy-minimap-background-color`, `--xy-controls-button-*`) mapped onto the same `--ql-*` tokens as the rest of the app. Components never override React Flow internals with raw colours.
+
 ## Responsive behaviour
 
 | Width | Layout |
@@ -126,7 +131,7 @@ Transitions are 120–160ms and only communicate state: node selection, panel op
 | ≥1440px | Three regions, all resizable |
 | 1024–1439px | Narrow explorer, collapsible inspector |
 | 768–1023px | Explorer and inspector become drawers |
-| <768px | Single work area; graph falls back to the operator list |
+| <768px | Single work area; the plan's list view is one tap away |
 
 ## Accessibility commitments
 
