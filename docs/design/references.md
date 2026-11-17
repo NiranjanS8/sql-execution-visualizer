@@ -44,5 +44,5 @@ What each reference was studied for, and what was actually taken from it. Nothin
 | Icons | Lucide | One library, consistent stroke weight |
 | Server state | TanStack Query | Added in Phase 0 with the first real request |
 | Graph | React Flow | Phase 9; layout via Dagre or ELK, decided then |
-| Editor | Monaco or CodeMirror | Phase 12; evaluated against bundle size and SQL grammar support |
-| Tables | TanStack Table | Phase 8; headless so the design system owns the visuals |
+| Editor | CodeMirror 6 | Chosen in Phase 8; SQL highlighting and `Mod-Enter`, lighter than Monaco for this scope |
+| Tables | Hand-rolled `DataGrid` | Phase 8; the grid is fixed-column and small enough that TanStack Table would add weight without benefit. Revisit if sorting or column resizing arrives |

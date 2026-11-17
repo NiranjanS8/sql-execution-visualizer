@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
@@ -55,6 +55,43 @@ const rowsBody = {
   hasMore: true,
 };
 
+const queryColumns = [
+  { id: "c1", name: "name", type: "text" },
+  { id: "c2", name: "salary", type: "integer" },
+];
+
+const queryBody = {
+  queryRunId: "run-1",
+  status: "completed",
+  datasetId: "samples",
+  columns: queryColumns,
+  rows: [["Ada Lovelace", "145000"]],
+  rowCount: 1,
+  resultLimit: 1000,
+  durationMs: 1.5,
+  execution: {
+    rootId: "n1",
+    nodes: [
+      {
+        id: "n1",
+        kind: "project",
+        label: "name, salary",
+        children: ["n2"],
+        columns: queryColumns,
+        rowsIn: 8,
+        rowsOut: 1,
+        durationMs: 0.5,
+        status: "completed",
+        input: { columns: [], rows: [], truncated: false },
+        output: { columns: queryColumns, rows: [["Ada Lovelace", "145000"]], truncated: false },
+      },
+    ],
+    edges: [{ from: "n1", to: "n2" }],
+    durationMs: 0.8,
+    status: "completed",
+  },
+};
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -68,7 +105,7 @@ function requestPath(input: RequestInfo | URL): string {
 }
 
 function mockApi() {
-  return vi.fn(async (input: RequestInfo | URL) => {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = requestPath(input);
     switch (path) {
       case "/api/v1/health":
@@ -79,6 +116,22 @@ function mockApi() {
         return jsonResponse(tableBody);
       case "/api/v1/datasets/samples/tables/employees/rows":
         return jsonResponse(rowsBody);
+      case "/api/v1/queries": {
+        const body = JSON.parse(String(init?.body ?? "{}")) as { sql?: string };
+        if ((body.sql ?? "").includes('WHERE "id" > 0')) {
+          return jsonResponse(
+            {
+              error: {
+                code: "type_error",
+                message: "WHERE requires a boolean predicate, found integer.",
+                location: { line: 1, column: 1 },
+              },
+            },
+            400,
+          );
+        }
+        return jsonResponse(queryBody);
+      }
       default:
         return jsonResponse(
           { error: { code: "not_found", message: `No mock for ${path}` } },
@@ -146,5 +199,45 @@ describe("App", () => {
       await screen.findByRole("heading", { name: /api connection/i }, { timeout: 5_000 }),
     ).toBeInTheDocument();
     expect(await screen.findByText(/npm run dev:api/, {}, { timeout: 5_000 })).toBeInTheDocument();
+  });
+
+  it("runs a query from the query tab and shows the backend result", async () => {
+    renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /employees/i }));
+    fireEvent.click(screen.getByRole("tab", { name: "Query" }));
+
+    const results = screen.getByRole("region", { name: /query results/i });
+    expect(within(results).getByText("No results yet")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^run$/i }));
+
+    expect(await within(results).findByText("Ada Lovelace")).toBeInTheDocument();
+    expect(within(results).getByText("145000")).toBeInTheDocument();
+    expect(within(results).getByText("1 row")).toBeInTheDocument();
+    expect(within(results).getByText("limit 1000")).toBeInTheDocument();
+  });
+
+  it("preserves the last successful result and marks it stale after a failure", async () => {
+    renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /employees/i }));
+    fireEvent.click(screen.getByRole("tab", { name: "Query" }));
+
+    const results = screen.getByRole("region", { name: /query results/i });
+    fireEvent.click(screen.getByRole("button", { name: /^run$/i }));
+    expect(await within(results).findByText("Ada Lovelace")).toBeInTheDocument();
+
+    const exampleSelect = screen.getByLabelText("Example queries");
+    const failingExample = within(exampleSelect).getByRole("option", {
+      name: "Filter on id",
+    }) as HTMLOptionElement;
+    fireEvent.change(exampleSelect, { target: { value: failingExample.value } });
+    fireEvent.click(screen.getByRole("button", { name: /^run$/i }));
+
+    expect(await within(results).findByText("Query failed")).toBeInTheDocument();
+    expect(within(results).getByText("type_error")).toBeInTheDocument();
+    expect(within(results).getByText(/showing the last successful result/i)).toBeInTheDocument();
+    expect(within(results).getByText("Ada Lovelace")).toBeInTheDocument();
   });
 });

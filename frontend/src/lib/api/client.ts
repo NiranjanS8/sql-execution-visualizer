@@ -8,12 +8,16 @@ export const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE_URL
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  readonly line?: number;
+  readonly column?: number;
 
-  constructor(message: string, status: number, code: string) {
+  constructor(message: string, status: number, code: string, line?: number, column?: number) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.line = line;
+    this.column = column;
   }
 }
 
@@ -21,6 +25,10 @@ type ErrorEnvelope = {
   error?: {
     code?: string;
     message?: string;
+    location?: {
+      line?: number;
+      column?: number;
+    };
   };
 };
 
@@ -36,6 +44,8 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
       body?.error?.message ?? `Request failed with status ${response.status}.`,
       response.status,
       body?.error?.code ?? "unknown_error",
+      body?.error?.location?.line,
+      body?.error?.location?.column,
     );
   }
 

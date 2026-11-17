@@ -3,8 +3,8 @@ import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { DataGrid } from "../../components/data/DataGrid";
 import type { Column } from "../../types/dataset";
-import { DataGrid } from "./DataGrid";
 import { useRows, useTable } from "./useDatasets";
 
 const PAGE_SIZE = 50;

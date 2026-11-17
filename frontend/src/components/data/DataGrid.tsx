@@ -3,7 +3,7 @@ import type { Cell, ColumnType } from "../../types/dataset";
 
 type GridColumn = {
   name: string;
-  type: ColumnType;
+  type: ColumnType | "null";
 };
 
 type DataGridProps = {
@@ -11,9 +11,10 @@ type DataGridProps = {
   rows: Cell[][];
   startIndex?: number;
   emptyMessage?: string;
+  stickyHeader?: boolean;
 };
 
-function isNumeric(type: ColumnType | undefined): boolean {
+function isNumeric(type: GridColumn["type"] | undefined): boolean {
   return type === "integer" || type === "decimal";
 }
 
@@ -39,6 +40,7 @@ export function DataGrid({
   rows,
   startIndex = 0,
   emptyMessage = "No rows.",
+  stickyHeader = false,
 }: DataGridProps) {
   if (rows.length === 0) {
     return <p className="px-4 py-8 text-center text-xs text-ink-faint">{emptyMessage}</p>;
@@ -47,16 +49,20 @@ export function DataGrid({
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left text-xs">
-        <thead>
+        <thead className={cn(stickyHeader && "sticky top-0 z-10 bg-panel")}>
           <tr className="border-b border-line">
             <th
               scope="col"
-              className="w-12 px-3 py-2 text-right font-mono text-[10px] font-normal text-ink-faint"
+              className="w-12 bg-inherit px-3 py-2 text-right font-mono text-[10px] font-normal text-ink-faint"
             >
               #
             </th>
             {columns.map((column, index) => (
-              <th key={`${column.name}-${index}`} scope="col" className="px-3 py-2 align-bottom">
+              <th
+                key={`${column.name}-${index}`}
+                scope="col"
+                className="bg-inherit px-3 py-2 align-bottom"
+              >
                 <span className="block font-mono text-[11px] font-medium text-ink">
                   {column.name}
                 </span>

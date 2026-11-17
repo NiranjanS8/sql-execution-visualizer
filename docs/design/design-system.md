@@ -92,9 +92,11 @@ Light is designed, not inverted: paper-toned canvas, pure white panels, and acce
 | `ExplorerSidebar` | layout | UI Phase B/C |
 | `InspectorPanel` | layout | UI Phase B |
 | `Tabs` | ui | UI Phase B |
-| `Dialog` | ui | UI Phase C |
-| `SqlEditor` | feature | UI Phase D |
-| `ResultsGrid` | feature | UI Phase E |
+| `Dialog` | ui | Built — Phase 2 (import) |
+| `SqlEditor` | feature | Built — Phase 8 (CodeMirror 6) |
+| `QueryWorkbench` | feature | Built — Phase 8 (editor, run/cancel, examples) |
+| `QueryResults` | feature | Built — Phase 8 (summary, stale/error/empty states) |
+| `DataGrid` | data | Built — Phase 8 (shared by table preview and results) |
 | `ExecutionGraph` | feature | UI Phase F |
 | `OperatorNode` | feature | UI Phase F |
 | `OperatorInspector` | feature | UI Phase F |

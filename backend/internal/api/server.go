@@ -9,6 +9,8 @@ import (
 
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/config"
 	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/dataset"
+	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/metrics"
+	"github.com/NiranjanS8/sql-execution-visualizer/backend/internal/query"
 )
 
 const serviceName = "querylens"
@@ -23,11 +25,27 @@ type Server struct {
 	cfg      config.Config
 	log      *slog.Logger
 	datasets *dataset.Store
+	queries  *query.Runner
 	started  time.Time
 }
 
 func NewServer(cfg config.Config, log *slog.Logger, datasets *dataset.Store) *Server {
-	return &Server{cfg: cfg, log: log, datasets: datasets, started: time.Now()}
+	return &Server{
+		cfg:      cfg,
+		log:      log,
+		datasets: datasets,
+		queries: query.NewRunner(query.Limits{
+			MaxSQLLength: cfg.QueryMaxSQLLength,
+			Timeout:      cfg.QueryTimeout,
+			MaxRows:      cfg.QueryMaxRows,
+			Samples: metrics.Options{
+				SampleLimit:   cfg.QuerySampleLimit,
+				CaptureInput:  true,
+				CaptureOutput: true,
+			},
+		}),
+		started: time.Now(),
+	}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -55,6 +73,9 @@ func (s *Server) Handler() http.Handler {
 	})
 	s.route(mux, "/api/v1/datasets/{datasetID}/tables/{tableID}/rows", methods{
 		http.MethodGet: s.handleTableRows,
+	})
+	s.route(mux, "/api/v1/queries", methods{
+		http.MethodPost: s.handleRunQuery,
 	})
 
 	mux.HandleFunc("/", s.handleNotFound)

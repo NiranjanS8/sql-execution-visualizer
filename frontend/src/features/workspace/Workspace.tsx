@@ -2,12 +2,16 @@ import { useState } from "react";
 import { Database, Upload } from "lucide-react";
 
 import { Button } from "../../components/ui/Button";
+import { cn } from "../../lib/cn";
 import { HealthPanel } from "../health/HealthPanel";
 import { DatasetExplorer, type TableSelection } from "../datasets/DatasetExplorer";
 import { ImportDialog } from "../datasets/ImportDialog";
 import { TableDetailPanel } from "../datasets/TableDetailPanel";
 import { useDatasets, useDeleteDataset } from "../datasets/useDatasets";
+import { QueryWorkbench } from "../query/QueryWorkbench";
 import type { DatasetDetail } from "../../types/dataset";
+
+type DetailTab = "table" | "query";
 
 function EmptyDetail({ onImport, hasDatasets }: { onImport: () => void; hasDatasets: boolean }) {
   return (
@@ -18,7 +22,7 @@ function EmptyDetail({ onImport, hasDatasets }: { onImport: () => void; hasDatas
       </h1>
       <p className="mt-1 text-xs leading-relaxed text-ink-muted">
         {hasDatasets
-          ? "Choose a table in the explorer to inspect its schema and preview its rows."
+          ? "Choose a table in the explorer to inspect its schema, preview its rows, and write SQL."
           : "Import a CSV file to create your first table, or explore the built-in sample datasets."}
       </p>
       {!hasDatasets ? (
@@ -31,11 +35,39 @@ function EmptyDetail({ onImport, hasDatasets }: { onImport: () => void; hasDatas
   );
 }
 
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "h-9 border-b-2 px-3 text-xs font-medium transition-colors",
+        active
+          ? "border-accent text-ink"
+          : "border-transparent text-ink-muted hover:text-ink",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function Workspace() {
   const datasets = useDatasets();
   const removeDataset = useDeleteDataset();
 
   const [selection, setSelection] = useState<TableSelection | null>(null);
+  const [tab, setTab] = useState<DetailTab>("table");
   const [importOpen, setImportOpen] = useState(false);
 
   const handleImported = (datasetId: string, tableId: string) => {
@@ -77,6 +109,7 @@ export function Workspace() {
   const selectedDataset = selection
     ? entries.find((entry) => entry.id === selection.datasetId)
     : undefined;
+  const selectedTable = selectedDataset?.tables.find((table) => table.id === selection?.tableId);
 
   return (
     <div className="flex h-full min-h-0 flex-col lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -91,14 +124,44 @@ export function Workspace() {
         onRetry={() => void datasets.refetch()}
       />
 
-      <section className="min-h-0 overflow-y-auto">
+      <section className="flex min-h-0 flex-col">
         {selection && selectedDataset ? (
-          <TableDetailPanel
-            key={`${selection.datasetId}/${selection.tableId}`}
-            datasetId={selection.datasetId}
-            datasetName={selectedDataset.name}
-            tableId={selection.tableId}
-          />
+          <>
+            <div
+              role="tablist"
+              aria-label="Detail view"
+              className="flex h-9 shrink-0 items-center gap-1 border-b border-line px-4"
+            >
+              <TabButton active={tab === "table"} onClick={() => setTab("table")}>
+                Table
+              </TabButton>
+              <TabButton active={tab === "query"} onClick={() => setTab("query")}>
+                Query
+              </TabButton>
+            </div>
+
+            <div className="min-h-0 flex-1">
+              <div className={cn("h-full overflow-y-auto", tab !== "table" && "hidden")}>
+                <TableDetailPanel
+                  key={`${selection.datasetId}/${selection.tableId}`}
+                  datasetId={selection.datasetId}
+                  datasetName={selectedDataset.name}
+                  tableId={selection.tableId}
+                />
+              </div>
+
+              <div className={cn("h-full", tab !== "query" && "hidden")}>
+                <QueryWorkbench
+                  key={`${selection.datasetId}/${selection.tableId}`}
+                  datasetId={selection.datasetId}
+                  datasetName={selectedDataset.name}
+                  tableId={selection.tableId}
+                  tableName={selectedTable?.name ?? selection.tableId}
+                  visible={tab === "query"}
+                />
+              </div>
+            </div>
+          </>
         ) : (
           <EmptyDetail onImport={() => setImportOpen(true)} hasDatasets={entries.length > 0} />
         )}

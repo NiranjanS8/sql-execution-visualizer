@@ -3,7 +3,7 @@ import { AlertTriangle, FileSpreadsheet, RefreshCw } from "lucide-react";
 
 import { Button } from "../../components/ui/Button";
 import { Dialog } from "../../components/ui/Dialog";
-import { DataGrid } from "./DataGrid";
+import { DataGrid } from "../../components/data/DataGrid";
 import { useCreateDataset, usePreviewImport } from "./useDatasets";
 
 type ImportDialogProps = {

@@ -6,7 +6,7 @@ This table is the contract. It is updated in the same change that implements a f
 
 ## Status
 
-Phase 7 implements parsing, name resolution, static type checking, expression evaluation, logical planning, the pull-based operators that run a single-table query (scan, filter, sort, project, and limit), and per-run execution metrics. A supported statement is turned into a validated structure whose output columns carry inferred types, then into an inspectable plan that executes end to end while the recorder captures stable IDs, durations, row counts, statuses, and bounded samples. Instrumentation does not change the result rows. **No HTTP query endpoint exists yet** — it arrives in Phase 8. Unsupported syntax is rejected at parse time, before any name is resolved.
+Phase 8 implements parsing, name resolution, static type checking, expression evaluation, logical planning, the pull-based operators that run a single-table query (scan, filter, sort, project, and limit), per-run execution metrics, and a synchronous HTTP endpoint that returns the rows together with the trace. A supported statement is turned into a validated structure whose output columns carry inferred types, then into an inspectable plan that executes end to end while the recorder captures stable IDs, durations, row counts, statuses, and bounded samples. Instrumentation does not change the result rows. `POST /api/v1/queries` enforces SQL length, execution time, and result-row budgets; exceeding one fails loudly. Unsupported syntax is rejected at parse time, before any name is resolved.
 
 ## Supported now
 
@@ -136,6 +136,8 @@ Errors carry a stable `code` and a 1-based line and column where the parser, val
 | `ambiguous_column` | `internal/validate` | A column reference matches more than one source. |
 | `type_error` | `internal/eval`, `internal/validate`, `internal/execution` | An operator cannot accept its operand types, `WHERE` is not boolean, or `ORDER BY` is boolean. |
 | `execution_error` | `internal/eval` | Evaluation failed: division by zero, numeric overflow, or an unbound column. |
-| `timeout` | Phase 8 | The request exceeded its deadline. Operators return `context.Canceled`/`context.DeadlineExceeded` unchanged so the API can classify it. |
+| `timeout` | `internal/query` | Execution exceeded the configured deadline. Operators return `context.Canceled`/`context.DeadlineExceeded` unchanged so the query layer can classify it. |
+| `cancelled` | `internal/query` | The client cancelled the request. |
+| `result_limit_exceeded` | `internal/query` | The query produced more rows than the configured result limit. |
 
 A single-table query cannot produce `ambiguous_column`: table schemas reject duplicate column names. The resolver already handles multiple sources, so the check is in place for Phase 10.
